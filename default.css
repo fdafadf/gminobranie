@@ -1,0 +1,23 @@
+html { height: 100% }
+body { height: 100%; margin: 0px; padding: 0px }
+.loader {
+  position: fixed;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: url('//upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Phi_fenomeni.gif/50px-Phi_fenomeni.gif') 50% 50% no-repeat rgb(249,249,249);
+}
+.panel {
+    border-collapse: collapse;
+    position: fixed;
+    background-color: rgba(26, 202, 190, 0.404);
+    font-family: "Monaco", monospace;
+    left: 1em;
+    top: 1em;
+}
+td {
+    border: 1px solid black; 
+    padding: 1em;
+}
