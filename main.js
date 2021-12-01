@@ -5,7 +5,7 @@ import { Http } from './js/Http.js'
 
 async function loadRide(fileName)
 {
-    let response = await fetch(`/notes/data/${fileName}`);
+    let response = await fetch(`/gminobranie/data/${fileName}`);
     let content = await response.text();
     let parser = new DOMParser();
     let gpx = parser.parseFromString(content, "text/xml");
@@ -64,8 +64,8 @@ async function onLoad()
 {
     let data_urls = 
     {
-        borders_shape_url: '/notes/data/Gminy_Small.shp',
-        borders_dbf_url: '/notes/data/Gminy.dbf',
+        borders_shape_url: '/gminobranie/data/Gminy_Small.shp',
+        borders_dbf_url: '/gminobranie/data/Gminy.dbf',
         ride_urls: ['Ride_01.xml', 'Ride_02.xml', 'Ride_03.xml', 'Ride_04.xml', 'Ride_05.xml', 'Ride_06.xml']
     }
     let data = await loadData(data_urls);
