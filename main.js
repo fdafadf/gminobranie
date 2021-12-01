@@ -99,7 +99,7 @@ async function onLoad()
 {
     let data_urls = 
     {
-        borders_2_shape_url: '/gminobranie/data/Województwa_Small.shp',
+        borders_2_shape_url: '/gminobranie/data/Wojewodztwa_Small.shp',
         borders_shape_url: '/gminobranie/data/Gminy_Small.shp',
         borders_dbf_url: '/gminobranie/data/Gminy.dbf',
         ride_urls: ['Ride_01.xml', 'Ride_02.xml', 'Ride_03.xml', 'Ride_04.xml', 'Ride_05.xml', 'Ride_06.xml']
