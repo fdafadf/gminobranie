@@ -13,7 +13,7 @@ Pliki w formacie [Shapefile (.shp)](https://pl.wikipedia.org/wiki/Shapefile) ora
 [Dokumentacja formatu Shapefile.](https://www.esri.com/content/dam/esrisites/sitecore-archive/Files/Pdfs/library/whitepapers/pdfs/shapefile.pdf)  
 [Dokumentacja formatu dBase.](https://en.wikipedia.org/wiki/.dbf)
 
-Na stronie https://mapshaper.org można zmniejszych objętoś plików Shapefile.
+Na stronie https://mapshaper.org można zmniejszych objętość plików Shapefile.
 
 ## Trasy
 
