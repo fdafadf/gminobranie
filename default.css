@@ -9,15 +9,48 @@ body { height: 100%; margin: 0px; padding: 0px }
   z-index: 9999;
   background: url('//upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Phi_fenomeni.gif/50px-Phi_fenomeni.gif') 50% 50% no-repeat rgb(249,249,249);
 }
-.panel {
-    border-collapse: collapse;
-    position: fixed;
-    background-color: rgba(26, 202, 190, 0.404);
-    font-family: "Monaco", monospace;
-    left: 1em;
-    top: 1em;
+.hidden {
+  display: none;
 }
-td {
+.panel {
+  position: fixed;
+  font-family: "Monaco", monospace;
+  left: 0.5em;
+  top: 0.5em;
+}
+.panel table {
+    border-collapse: collapse;
+    margin: 0.5em;
+}
+.panel td, .panel th {
     border: 1px solid black; 
-    padding: 1em;
+}
+.panel table td > div {
+  padding: 0.5em;
+}
+table.info {
+  background-color: rgba(69, 150, 105, 0.9);
+}
+table.activities {
+  background-color: rgba(105, 135, 224, 0.9);
+}
+table.activities tbody tr:first-child {
+  background-color: rgba(255, 0, 0, 0.9);
+}
+table.activities tbody td {
+  cursor: pointer;
+  padding: 0.2em;
+}
+table.activities tbody tr:hover {
+  background-color: rgba(190, 80, 80, 0.9);
+}
+.button {
+  cursor: pointer;
+  border-style: outset;
+  border-width: 0.2em;
+  border-color: rgba(60, 179, 113, 0.9);
+}
+.button.selected {
+  border-style: inset;
+  background-color: rgba(80, 184, 127, 0.9);
 }

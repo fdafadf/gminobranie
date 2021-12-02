@@ -3,38 +3,37 @@ import { DBaseFile } from './js/DBaseFile.js'
 import { View } from './js/View.js'
 import { Http } from './js/Http.js'
 
-async function loadRide(fileName)
+async function fetchText(url)
 {
-    let response = await fetch(`/gminobranie/data/${fileName}`);
-    let content = await response.text();
-    let parser = new DOMParser();
-    let gpx = parser.parseFromString(content, "text/xml");
-    let points = gpx.getElementsByTagName("trkpt");
-    let path = [];
-    path.push({ x: parseFloat(points[0].getAttribute('lon')), y: parseFloat(points[0].getAttribute('lat'))});
-
-    for (let i = 1; i < points.length; i++) 
-    {
-        path.push({ x: parseFloat(points[i].getAttribute('lon')), y: parseFloat(points[i].getAttribute('lat'))});
-    }
-
-    return path;
+    return await (await fetch(url)).text();
 }
 
-async function loadData({ borders_2_shape_url, borders_shape_url, borders_dbf_url, ride_urls })
+async function fetchXmlDocument(url, type = "text/xml")
 {
-    let borders_2_shape = new ShapeFile(new DataView(await Http.request({ url: borders_2_shape_url, responseType: 'arraybuffer' })));
-    let borders_shape = new ShapeFile(new DataView(await Http.request({ url: borders_shape_url, responseType: 'arraybuffer' })));
-    let borders_dbf = new DBaseFile(new DataView(await Http.request({ url: borders_dbf_url, responseType: 'arraybuffer' })));
-    let rides = await Promise.all(ride_urls.map(loadRide));
-    return { borders_2_shape, borders_shape, borders_dbf, rides };
+    return new DOMParser().parseFromString(await fetchText(url), type);
 }
 
-function normalizeShape(shape)
+async function fetchShapeFile(url)
 {
-    let background_color = 0;
-    let background_color_step = 360 / shape.items.length;
+    return new ShapeFile(new DataView(await Http.request({ url, responseType: 'arraybuffer' })));
+}
 
+async function fetchDBaseFile(url)
+{
+    return new DBaseFile(new DataView(await Http.request({ url, responseType: 'arraybuffer' })));
+}
+
+async function fetchRide(fileName)
+{
+    let gpx = await fetchXmlDocument(`/gminobranie/data/${fileName}`);
+    let time = gpx.querySelector('metadata > time').textContent;
+    let name = gpx.querySelector('trk > name').textContent;
+    let path = [...gpx.getElementsByTagName("trkpt")].map(p => ({ x: parseFloat(p.getAttribute('lon')), y: parseFloat(p.getAttribute('lat'))}));
+    return { name, time, path };
+}
+
+function createPath2dInShapefile(shape)
+{
     for (let item of shape.items)
     {
         item.paths = [];
@@ -45,10 +44,7 @@ function normalizeShape(shape)
             let from = parts[k - 1];
             let to = parts[k];
             let path = new Path2D();
-            console.log(`item(${item.number}) from(${from}) to(${to})`);
             path.moveTo(item.points[to * 2 - 2], item.points[to * 2 - 1]);
-            path.background_color = `hsl(${Math.round(background_color)}, 100%, 90%)`;
-            path.background_color_selected = `hsl(${Math.round(background_color)}, 100%, 50%)`;
 
             for (let i = from; i < to; i++)
             {
@@ -57,60 +53,161 @@ function normalizeShape(shape)
 
             item.paths.push(path);
         }
-
-        background_color += background_color_step;
     }
 }
 
-function normalizeRide(ride, translate_x, translate_y, scale_x, scale_y)
+function createPath2dInRide(ride)
 {
-    let path = new Path2D();
-    path.moveTo
-    (
-        translate_x + (ride[0].x - 14.116667) * scale_x,
-        translate_y + (ride[0].y - 49.000000) * scale_y
-    );
+    let ride_path = ride.path;
+    let path2d = new Path2D();
+    path2d.moveTo(ride_path[0].x, ride_path[0].y);
 
-    for (let i = 1; i < ride.length; i++)
+    for (let i = 1; i < ride_path.length; i++)
     {
-        path.lineTo
-        (
-            translate_x + (ride[i].x - 14.116667) * scale_x,
-            translate_y + (ride[i].y - 49.000000) * scale_y
-        );
+        path2d.lineTo(ride_path[i].x, ride_path[i].y);
     }
 
-    return path;
+    ride.path2d = path2d;
 }
 
-// TODO: Konwersja koordynatów z standardu PUWG 1992 (EPSG:2180) do WGS84 (ESPG:4326)
-
-async function normalizeData({ borders_2_shape, borders_shape, borders_dbf, rides })
+function calculateColors({ shapes, labels })
 {
-    normalizeShape(borders_2_shape);
-    normalizeShape(borders_shape);
-    let scale_x = (borders_shape.max_x - borders_shape.min_x) / (24.150000 - 14.116667);
-    let scale_y = (borders_shape.max_y - borders_shape.min_y) / (54.833333 - 49.000000);
-    rides = rides.map(ride => normalizeRide(ride, borders_shape.min_x, borders_shape.min_y, scale_x, scale_y));
-    return { borders_2_shape, borders_shape, borders_dbf, rides };
+    let rows = labels.rows.map((row, index) => ({ number: index, code: row[1] }));
+    rows.sort((a, b) => (a.code > b.code) ? 1 : -1);
+    let order = new Array(rows.length);
+
+    for (let i = 0; i < rows.length; i++)
+    {
+        order[rows[i].number] = i;
+    }
+
+    let color_step = 360 / shapes.items.length;
+
+    for (let item of shapes.items)
+    {
+        let item_order = item.number; //order[item.number];
+        let color = color_step * item_order;
+        
+        for (let path of item.paths)
+        {
+            path.background_color = `hsl(${Math.round(color)}, 80%, 95%)`;
+            path.background_color_selected = `hsl(${Math.round(color)}, 100%, 50%)`;
+        }
+    }
+}
+
+function convertRideCoordinates(ride, projection)
+{
+    // Konwersja koordynatów z standardu PUWG 1992 (EPSG:2180) do WGS84 (ESPG:4326)
+
+    for (let point of ride.path)
+    {
+        [point.x, point.y] = proj4(projection, [point.x, point.y]);
+    }
+}
+
+function getPointsBoundingRectangle(points)
+{
+    let xs = points.map(p => p.x);
+    let ys = points.map(p => p.y);
+    let left = Math.min.apply(Math, xs);
+    let right = Math.max.apply(Math, xs);
+    let top = Math.max.apply(Math, ys);
+    let bottom = Math.min.apply(Math, ys);
+    return { left, right, top, bottom }
+}
+
+function isPointInRectangle({ left, right, top, bottom }, x, y)
+{
+    return x >= left && x <= right && y <= top && y >= bottom;
+}
+
+function areRectanglesOverlap(a, b)
+{
+    return isPointInRectangle(a, b.left, b.top)
+        || isPointInRectangle(a, b.left, b.bottom)
+        || isPointInRectangle(a, b.right, b.top)
+        || isPointInRectangle(a, b.right, b.bottom)
+        || isPointInRectangle(b, a.left, a.top)
+        || isPointInRectangle(b, a.left, a.bottom)
+        || isPointInRectangle(b, a.right, a.top)
+        || isPointInRectangle(b, a.right, a.bottom);
+}
+
+function checkVisitedBorders({ shapes, labels }, rides)
+{
+    let context = document.createElement('canvas').getContext("2d");
+
+    for (let ride of rides)
+    {
+        let ride_bounding_rectangle = getPointsBoundingRectangle(ride.path);
+                
+        for (let item of shapes.items)
+        {
+            if (!item.visited)
+            {
+                let item_bounding_rectangle = { left: item.min_x, right: item.max_x, top: item.max_y, bottom: item.min_y };
+                
+                if (areRectanglesOverlap(ride_bounding_rectangle, item_bounding_rectangle))
+                {
+                    paths: for (let path of item.paths)
+                    {
+                        for (let point of ride.path)
+                        {
+                            if (context.isPointInPath(path, point.x, point.y))
+                            {
+                                item.visited = true;
+                                break paths;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (let item of shapes.items)
+    {
+        if (item.visited)
+        {
+            for (let path of item.paths)
+            {
+                path.background_color = 'GreenYellow';
+                path.background_color_selected = 'Chartreuse';
+            }
+        }
+    }
 }
 
 async function onLoad()
 {
-    let data_urls = 
+    let data = 
     {
-        borders_2_shape_url: '/gminobranie/data/Wojewodztwa_Small.shp',
-        borders_shape_url: '/gminobranie/data/Gminy_Small.shp',
-        borders_dbf_url: '/gminobranie/data/Gminy.dbf',
-        ride_urls: ['Ride_01.xml', 'Ride_02.xml', 'Ride_03.xml', 'Ride_04.xml', 'Ride_05.xml', 'Ride_06.xml']
+        borders: 
+        {
+            wojewodztwa: 
+            {
+                shapes: await fetchShapeFile('/gminobranie/data/Wojewodztwa_Small.shp')
+            },
+            gminy: 
+            {
+                shapes: await fetchShapeFile('/gminobranie/data/Gminy_Small.shp'),
+                labels: await fetchDBaseFile('/gminobranie/data/Gminy.dbf'),
+                projection: await fetchText('/gminobranie/data/Gminy.prj')
+            }
+        },
+        rides: await Promise.all(['Ride_01.xml', 'Ride_02.xml', 'Ride_03.xml', 'Ride_04.xml', 'Ride_05.xml', 'Ride_06.xml'].map(fetchRide))
+        //rides: await Promise.all(['Ride_01.xml'].map(fetchRide))
     }
-    let data = await loadData(data_urls);
-    let normalized_data = await normalizeData(data);
-    let view = new View(Object.assign(normalized_data, { width: 2500, height: 2500}));
+    
+    createPath2dInShapefile(data.borders.wojewodztwa.shapes);
+    createPath2dInShapefile(data.borders.gminy.shapes);
+    calculateColors(data.borders.gminy);
+    data.rides.forEach(ride => convertRideCoordinates(ride, data.borders.gminy.projection));
+    data.rides.forEach(createPath2dInRide);
+    checkVisitedBorders(data.borders.gminy, data.rides);
+    let view = new View(data, 2500, 2500);
     document.querySelector('.loader').remove();
 }
 
 window.onload = onLoad;
-
-// https://gis-support.pl/baza-wiedzy-2/dane-do-pobrania/granice-administracyjne/
-// https://mapshaper.org/

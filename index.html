@@ -7,20 +7,36 @@
     <title>Gminobranie</title>
 	<style type="text/css">
     </style>
-    <script type="module" src="main.js"></script>
     <link rel="stylesheet" href="default.css" type="text/css" />
+    <script type="module" src="main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4-src.js" integrity="sha512-v9fKB/Tdskpid8kkFcCde7j8nyykKK9fBAZIU8pzTuMIOMJYccsutTxn8qUS/p/32FG/ynVrsbj+dsaya/jNEg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <div class="loader"></div>
-    <table class="panel">
-        <tr>
-            <td>Zebranych gmin</td>
-            <td>0</td>
-        </tr>
-        <tr>
-            <td>Gmina</td>
-            <td id="gmina"></td>
-        </tr>
-    </table>
+    <div class="panel">
+        <table class="info">
+            <tr>
+                <td><div id="activities_button">Aktywności</div></td>
+                <td><div id="activities_counter"></div></td>
+            </tr>
+            <tr>
+                <td><div>Zebranych gmin</div></td>
+                <td><div id="visited_gminas"></div></td>
+            </tr>
+            <tr>
+                <td><div>Gmina</div></td>
+                <td><div id="gmina"></div></td>
+            </tr>
+        </table>
+        <table class="activities">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Nazwa</th>
+                </tr>
+            </thead>
+            <tbody id="activities_table_body"></tbody>
+        </table>
+    </div>
 </body>
 </html>

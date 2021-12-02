@@ -20,3 +20,7 @@ Na stronie https://mapshaper.org można zmniejszych objętość plików Shapefil
 [Pliki w formacie GPX (.gpx).](https://pl.wikipedia.org/wiki/GPX)
 
 Format GPX jest samoopisujący się.
+
+## Konwersja współrzędnych geodezyjnych
+
+Wykorzystano bibliotekę https://github.com/proj4js/proj4js.

@@ -43,8 +43,6 @@ export class ShapeFile
                         points[i] = reader.readFloat64(true);
                     }
 
-                    //reader.position += length - 30;
-                    console.log(`POLY parts(${parts.length}) points(${points.length})`);
                     return { number, length, type, points, parts, min_x, min_y, max_x, max_y };
                 default:
                     debugger;

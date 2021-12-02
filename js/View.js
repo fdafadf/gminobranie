@@ -2,13 +2,12 @@ import { CanvasContextTransform } from "./CanvasContextTransform.js";
 
 export class View
 {
-    constructor({ borders_2_shape, borders_shape, borders_dbf, rides, width, height })
+    constructor({ borders: { wojewodztwa, gminy }, rides }, width, height)
     {
-        this.scale_x = width / (borders_shape.max_x - borders_shape.min_x);
-        this.scale_y = height / (borders_shape.max_y - borders_shape.min_y);
-        this.borders_2_shape = borders_2_shape;
-        this.borders_shape = borders_shape;
-        this.borders_dbf = borders_dbf;
+        this.scale_x = width / (gminy.shapes.max_x - gminy.shapes.min_x);
+        this.scale_y = height / (gminy.shapes.max_y - gminy.shapes.min_y);
+        this.wojewodztwa = wojewodztwa;
+        this.gminy = gminy;
         this.rides = rides;
         this.canvas = document.createElement('canvas');
         this.canvas.width = height;
@@ -16,27 +15,14 @@ export class View
         this.canvas.addEventListener("mousemove", this._onMouseMove.bind(this));
         this.context = this.canvas.getContext("2d");
         this.context_transform = this._createCanvasContextTransform(this.context);
-
-        // for (let ride of rides)
-        // {
-        //     for (let item of borders_shape)
-        //     {
-        //         for (let path of item.paths)
-        //         {
-        //             for (point in rides)
-        //             {
-
-        //             }
-        //             if (this.context.isPointInPath(path, e.offsetX, e.offsetY))
-        //             {
-        //             }
-        //         }
-        //     }
-        // }
-
         this.buffer = this._createBuffer();
         this._drawBuffer();
         document.body.appendChild(this.canvas);
+        
+        rides.forEach(ride => activities_table_body.appendChild(this._createActivityElement(ride)));
+        visited_gminas.innerText = gminy.shapes.items.filter(item => item.visited).length;
+        activities_counter.innerText = rides.length;
+        this._bindButton(activities_button, this.toggleActivities);
     }
 
     draw()
@@ -54,7 +40,10 @@ export class View
                 this.context.fill(path);
             }
             
-            gmina.innerText = this.borders_dbf.rows[this.selectedItem.number - 1][2];
+            let row = this.gminy.labels.rows[this.selectedItem.number - 1];
+            let name = row[2];
+            let code = row[1].trim();
+            gmina.innerText = `${name} (${code})`;
         }
         else
         {
@@ -65,15 +54,31 @@ export class View
 
         for (let ride of this.rides)
         {
-            this.context.stroke(ride);
+            this.context.stroke(ride.path2d);
         }
+
+        this.context.strokeStyle = 'red';
+        this.context.stroke(this.rides[0].path2d);
+    }
+
+    toggleActivities()
+    {
+        activities_button.classList.toggle('selected');
+        document.querySelector('table.activities').classList.toggle('hidden');
+    }
+
+    _bindButton(element, action)
+    {
+        element.classList.add('button');
+        element.classList.add('selected');
+        element.addEventListener('click', action);
     }
 
     _drawBuffer()
     {
         this.context.save();
         this.context.resetTransform();
-        this.context.drawImage(this.buffer, 0, 0); //, this.canvas.width, this.canvas.height, 0, 0, this.canvas.width, this.canvas.height);
+        this.context.drawImage(this.buffer, 0, 0);
         this.context.restore();
     }
 
@@ -82,7 +87,7 @@ export class View
         let context_transform = new CanvasContextTransform(context);
         context.transform(1, 0, 0, -1, 0, context.canvas.height);
         context_transform.scale(this.scale_x, this.scale_y);
-        context_transform.translate(-this.borders_shape.min_x, -this.borders_shape.min_y);
+        context_transform.translate(-this.gminy.shapes.min_x, -this.gminy.shapes.min_y);
         context.lineWidth = 1 / Math.min(this.scale_x, this.scale_y);
         return context_transform;
     }
@@ -94,7 +99,7 @@ export class View
         this._createCanvasContextTransform(context);
         context.imageSmoothingEnabled = false;
         
-        for (let item of this.borders_shape.items)
+        for (let item of this.gminy.shapes.items)
         {
             for (let path of item.paths)
             {
@@ -104,7 +109,7 @@ export class View
             }
         }
         
-        for (let item of this.borders_2_shape.items)
+        for (let item of this.wojewodztwa.shapes.items)
         {
             for (let path of item.paths)
             {
@@ -115,9 +120,21 @@ export class View
         return canvas;
     }
 
+    _createActivityElement(ride)
+    {
+        let tr = document.createElement('tr');
+        let td_date = document.createElement('td');
+        let td_name = document.createElement('td');
+        td_date.innerText = ride.time;
+        td_name.innerText = ride.name;
+        tr.appendChild(td_date);
+        tr.appendChild(td_name);
+        return tr;
+    }
+
     _onMouseMove(e)
     {
-        for (let item of this.borders_shape.items)
+        for (let item of this.gminy.shapes.items)
         {
             for (let path of item.paths)
             {
