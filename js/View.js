@@ -14,6 +14,7 @@ export class View
         this.canvas.height = height;
         this.canvas.addEventListener("mousemove", this._onMouseMove.bind(this));
         this.context = this.canvas.getContext("2d");
+        this.context.imageSmoothingEnabled = false;
         this.context_transform = this._createCanvasContextTransform(this.context);
         this.buffer = this._createBuffer();
         this._drawBuffer();
@@ -27,9 +28,12 @@ export class View
 
     draw()
     {
+        this.context.shadowBlur = 0;
         this.context.fillStyle = 'white';
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.context.clearRect(0, 0, this.gminy.shapes.max_x, this.gminy.shapes.max_y);
         this._drawBuffer();
+        this.context.lineWidth = 2 / Math.min(this.scale_x, this.scale_y);
+        this.context.strokeStyle = 'black';
 
         if (this.selectedItem)
         {
@@ -51,6 +55,8 @@ export class View
         }
 
         this.context.strokeStyle = 'blue';
+        this.context.shadowBlur = 7;
+        this.context.shadowColor = "lightgray";
 
         for (let ride of this.rides)
         {
@@ -98,6 +104,24 @@ export class View
         let context = canvas.getContext("2d");
         this._createCanvasContextTransform(context);
         context.imageSmoothingEnabled = false;
+        context.strokeStyle = 'gray';
+        context.shadowBlur = 7;
+        context.shadowColor = "lightgray";
+        context.lineWidth = 5 / Math.min(this.scale_x, this.scale_y);
+        context.filter = 'blur(2px)';
+        
+        for (let item of this.wojewodztwa.shapes.items)
+        {
+            for (let path of item.paths)
+            {
+                context.stroke(path);
+            }
+        }
+        
+        context.filter = 'none';
+        context.shadowBlur = 0;
+        context.strokeStyle = 'gray';
+        context.lineWidth = 1.5 / Math.min(this.scale_x, this.scale_y);
         
         for (let item of this.gminy.shapes.items)
         {
@@ -108,6 +132,9 @@ export class View
                 context.fill(path);
             }
         }
+        
+        context.strokeStyle = 'black';
+        context.lineWidth = 1 / Math.min(this.scale_x, this.scale_y);
         
         for (let item of this.wojewodztwa.shapes.items)
         {
