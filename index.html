@@ -2,41 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Gminobranie</title>
-	<style type="text/css">
-    </style>
     <link rel="stylesheet" href="default.css" type="text/css" />
+    <link rel="stylesheet" href="http://fonts.cdnfonts.com/css/roboto">
     <script type="module" src="main.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4-src.js" integrity="sha512-v9fKB/Tdskpid8kkFcCde7j8nyykKK9fBAZIU8pzTuMIOMJYccsutTxn8qUS/p/32FG/ynVrsbj+dsaya/jNEg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="module" src="https://unpkg.com/ionicons@5.0.0/dist/ionicons/ionicons.esm.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="loader"></div>
-    <div class="panel">
-        <table class="info">
-            <tr>
-                <td><div id="activities_button">Aktywności</div></td>
-                <td><div id="activities_counter"></div></td>
-            </tr>
-            <tr>
-                <td><div>Zebranych gmin</div></td>
-                <td><div id="visited_gminas"></div></td>
-            </tr>
-            <tr>
-                <td><div>Gmina</div></td>
-                <td><div id="gmina"></div></td>
-            </tr>
-        </table>
-        <table class="activities">
-            <thead>
+    <header>
+        <div class="table-container">
+            <table>
                 <tr>
-                    <th>Data</th>
-                    <th>Nazwa</th>
+                    <th>Activities</th>
+                    <td id="activities_counter"></td>
                 </tr>
-            </thead>
-            <tbody id="activities_table_body"></tbody>
-        </table>
-    </div>
+            </table>
+        </div>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Passed</th>
+                    <td id="passed_counter"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th><i data-feather="mouse-pointer"></i></th>
+                    <td id="gmina"></td>
+                </tr>
+            </table>
+        </div>
+    </header>
+    <main>
+        <div id="content">
+            <div id="map-container">
+            </div>
+        </div>
+        <div id="side">
+            <div class="table-container">
+                <table id="activities_table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" /></th>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <td class="action menu-button"><i data-feather="menu"></i></td>
+                        </tr>
+                    </thead>
+                    <tbody class="menu hidden">
+                        <tr>
+                            <td colspan="4">
+                                <button>Remove Selected</button>
+                                <button>Upload</button>
+                                <button>Connect To Strava</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody class="items">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
 </body>
 </html>
