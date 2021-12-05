@@ -56,18 +56,18 @@ async function onLoad()
     let map_activities = new MapActivities(data.activities);
     let map_container = document.querySelector('div#map-container');
     let map = new Map(map_container.clientWidth, map_container.clientHeight, map_borders, map_activities);
-    table.noFileReceived = file_content => 
+    table.noFilesReceived = files => 
     {
-        let activity = MapData.parseActivity(file_content);
-        data.addActivity(activity);
-        activity.path2d = MapActivities.createPath2d(activity);
-        table.addRow(activity);
-        map.draw();
-        let main = document.querySelector('main');
-        main.style.display = 'none';
-        main.offsetHeight;
-        main.style.display = 'flex';
+        for (let file of files)
+        {
+            let activity = MapData.parseActivity(file);
+            data.addActivity(activity);
+            activity.path2d = MapActivities.createPath2d(activity);
+            table.addRow(activity);
+        }
+
         refreshLabels(data);
+        map.draw();
     }
     map.onSelectedBordersItemChanged = () => 
     {

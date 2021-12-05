@@ -73,18 +73,22 @@ export class Table
         this.element.querySelector('.drop').style.display = 'none';
     }
 
-    _handleDrop(e)
+    async _handleDrop(e)
     {
         e.preventDefault();
-
-        for (let file of e.dataTransfer.files)
-        {
-            let file_reader = new FileReader();
-            file_reader.onload = e => this.noFileReceived(e.target.result);
-            file_reader.readAsText(file);
-        }
-        
         this.element.querySelector('.drop').style.display = 'none';
+
+        function readFile(file)
+        {
+            return new Promise(resolve => 
+            {
+                let file_reader = new FileReader();
+                file_reader.onload = e => resolve(e.target.result);
+                file_reader.readAsText(file);
+            });
+        }
+
+        this.noFilesReceived(await Promise.all([...e.dataTransfer.files].map(readFile)));
     }
 
     _onMenuButton()
