@@ -123,11 +123,11 @@ button:hover {
     color: #555;
 }
 ion-icon {
-  color: red;
+    color: red;
 }
 .feather {
-  width: 16px;
-  height: 16px;
+    width: 16px;
+    height: 16px;
 }
 #side {
     overflow-y: auto;
@@ -138,7 +138,7 @@ th.center {
     justify-content: center;
 }
 .data-type-date {
-  text-align: right;
+    text-align: right;
 }
 #map-container {
     margin: 0.5em;
@@ -146,19 +146,19 @@ th.center {
     flex: 1;
 }
 tbody.drop {
-  display: none;
+    display: none;
 }
 table.drop * {
-  visibility: hidden;
+    visibility: hidden;
 }
 .logo {
-  margin: 0.5em;
-  background-color: white;
-  align-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
-  box-shadow: 0px 0px 3px -1px rgb(163, 163, 163);
+    margin: 0.5em;
+    background-color: white;
+    align-items: center;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+    box-shadow: 0px 0px 3px -1px rgb(163, 163, 163);
 }
 .logo img {
-  height: calc(3em - 5px);
+    height: calc(3em - 5px);
 }

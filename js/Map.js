@@ -85,7 +85,7 @@ export class Map
         context.lineWidth = 1 / transform.scale;
         context.strokeStyle = 'gray';
         this._transformContext(context, transform);
-        this.borders.drawTo(context);
+        this.borders.drawTo(context, transform);
     }
 
     _transformContext(context, transform)

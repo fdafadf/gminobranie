@@ -1,13 +1,15 @@
 export class MapBorders
-{v
+{
     shape_background = 'white';
-    shape_background_visited = '#e5ffe5';
+    shape_background_visited = '#c5ffc5';
 
-    constructor({ wojewodztwa, gminy })
+    constructor({ kraj, wojewodztwa, gminy })
     {
+        MapBorders.createPath2dInShapefile(kraj.shapes);
         MapBorders.createPath2dInShapefile(wojewodztwa.shapes);
         MapBorders.createPath2dInShapefile(gminy.shapes);
         MapBorders.calculateColors(gminy);
+        this.kraj = kraj;
         this.wojewodztwa = wojewodztwa;
         this.gminy = gminy;
         this.boundaries = 
@@ -19,16 +21,30 @@ export class MapBorders
         }
     }
 
-    drawTo(context)
+    drawTo(context, transform)
     {
         context.filter = 'none';
+        context.strokeStyle = '#aaa';
+        context.lineWidth = 1 / transform.scale;
+        context.shadowColor = 'rgb(163, 163, 163)';
+        context.shadowBlur = 3;
+        
+        for (let item of this.kraj.shapes.items)
+        {
+            for (let path of item.paths)
+            {
+                context.stroke(path);
+            }
+        }
+        
         context.shadowBlur = 0;
         context.strokeStyle = 'gray';
-        // //context.lineWidth = 1.5 / Math.min(this.scale_x, this.scale_y);
+        context.lineWidth = 1 / transform.scale;
         
         for (let item of this.gminy.shapes.items)
         {
-            context.fillStyle = item.visited_count > 0 ? this.shape_background_visited : this.shape_background;
+            context.fillStyle = item.visited_count > 0 ? this.shape_background_visited : item.background_color;
+            //context.fillStyle = item.background_color;
 
             for (let path of item.paths)
             {
@@ -38,7 +54,6 @@ export class MapBorders
         }
         
         // context.strokeStyle = 'black';
-        // //context.lineWidth = 1 / Math.min(this.scale_x, this.scale_y);
         
         for (let item of this.wojewodztwa.shapes.items)
         {
@@ -90,12 +105,8 @@ export class MapBorders
         {
             let item_order = item.number; //order[item.number];
             let color = color_step * item_order;
-            
-            for (let path of item.paths)
-            {
-                path.background_color = `hsl(${Math.round(color)}, 80%, 95%)`;
-                path.background_color_selected = `hsl(${Math.round(color)}, 100%, 50%)`;
-            }
+            item.background_color = `hsl(${Math.round(color)}, 80%, 98%)`;
+            item.background_color_selected = `hsl(${Math.round(color)}, 100%, 50%)`;
         }
     }
 }

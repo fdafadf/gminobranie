@@ -12,8 +12,12 @@ export class MapData
         this.context = document.createElement('canvas').getContext("2d");
     }
 
-    async loadBorders({ wojewodztwa, gminy })
+    async loadBorders({ kraj, wojewodztwa, gminy })
     {
+        this.kraj = 
+        {
+            shapes: await MapData.fetchShapeFile(this.getUrl(kraj.shapes))
+        };
         this.wojewodztwa = 
         {
             shapes: await MapData.fetchShapeFile(this.getUrl(wojewodztwa.shapes))

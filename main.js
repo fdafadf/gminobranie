@@ -28,6 +28,10 @@ async function onLoad()
     {
         borders: 
         {
+            kraj:
+            {
+                shapes: 'Country_Small.shp'
+            },
             wojewodztwa: 
             {
                 shapes: 'Wojewodztwa_Small.shp'
