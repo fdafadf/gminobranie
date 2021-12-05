@@ -24,15 +24,31 @@ export class MapData
             labels: await MapData.fetchDBaseFile(this.getUrl(gminy.labels)),
             projection: await MapData.fetchText(this.getUrl(gminy.projection))
         };
+
+        for (let item of this.gminy.shapes.items)
+        {
+            item.visited_count = 0;
+        }
     }
 
     async loadActivity(file_name)
     {
-        let activity = await MapData.fetchActivity(this.getUrl(file_name));
+        return this.addActivity(await MapData.fetchActivity(this.getUrl(file_name)));
+    }
+
+    addActivity(activity)
+    {
         MapData.normalizeCoordinates(activity, this.gminy.projection);
-        this.checkVisitedBorders(activity);
+        this.checkVisitedBorders(activity, false);
         this.activities.push(activity);
         return activity;
+    }
+
+    removeActivity(activity)
+    {
+        this.checkVisitedBorders(activity, true);
+        let index = this.activities.findIndex(a => a === activity);
+        this.activities.splice(index, 1);
     }
 
     getUrl(file_name)
@@ -40,14 +56,19 @@ export class MapData
         return `${this.base_url}/data/${file_name}`;
     }
 
-    checkVisitedBorders(activity)
+    checkVisitedBorders(activity, remove)
     {
         let ride_bounding_rectangle = SimpleGeometry.getPointsBoundingRectangle(activity.path);
+        
+        // for (let item of this.gminy.shapes.items)
+        // {
+        //     item.visited_tmp = false;
+        // }
                 
         for (let item of this.gminy.shapes.items)
         {
-            if (!item.visited)
-            {
+            //if (!item.visited_tmp)
+            //{
                 let item_bounding_rectangle = { left: item.min_x, right: item.max_x, top: item.max_y, bottom: item.min_y };
                 
                 if (SimpleGeometry.areRectanglesOverlap(ride_bounding_rectangle, item_bounding_rectangle))
@@ -58,13 +79,22 @@ export class MapData
                         {
                             if (this.context.isPointInPath(path, point.x, point.y))
                             {
-                                item.visited = true;
+                                if (remove)
+                                {
+                                    item.visited_count--;
+                                }
+                                else
+                                {
+                                    item.visited_count++;
+                                }
+
+                                //item.visited_tmp = true;
                                 break paths;
                             }
                         }
                     }
                 }
-            }
+            //}
         }
     }
     
@@ -100,7 +130,12 @@ export class MapData
     
     static async fetchActivity(url)
     {
-        let gpx = await MapData.fetchXmlDocument(url);
+        return this.parseActivity(await MapData.fetchText(url));
+    }
+
+    static parseActivity(content)
+    {
+        let gpx = new DOMParser().parseFromString(content, "text/xml");
         let time = gpx.querySelector('metadata > time').textContent;
         let name = gpx.querySelector('trk > name').textContent;
         let path = [...gpx.getElementsByTagName("trkpt")].map(p => ({ x: parseFloat(p.getAttribute('lon')), y: parseFloat(p.getAttribute('lat'))}));

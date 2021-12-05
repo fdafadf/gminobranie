@@ -39,6 +39,10 @@
                 </tr>
             </table>
         </div>
+        <div style="flex: 1;"></div>
+        <div class="logo">
+            <img src="logo.png" />
+        </div>
     </header>
     <main>
         <div id="content">
@@ -47,21 +51,30 @@
         </div>
         <div id="side">
             <div class="table-container">
-                <table id="activities_table">
+                <table id="activities_table" class="selectable">
                     <thead>
                         <tr>
                             <th><input type="checkbox" /></th>
                             <th>Date</th>
                             <th>Name</th>
-                            <td class="action menu-button"><i data-feather="menu"></i></td>
+                            <th class="action menu-button"><i data-feather="menu"></i></th>
                         </tr>
                     </thead>
-                    <tbody class="menu hidden">
+                    <tbody class="drop">
+                        <tr>
+                            <td colspan="4" style="text-align: center; background-color: #f5fff5;">Upload New Files</td>
+                        </tr>
+                    </tbody>
+                    <tbody class="menu-item">
                         <tr>
                             <td colspan="4">
-                                <button>Remove Selected</button>
-                                <button>Upload</button>
-                                <button>Connect To Strava</button>
+                                <div style="display: flex; flex-direction: row;">
+                                    <div>
+                                        <button id="remove-button">Remove Selected</button>
+                                        <button id="connect-button">Connect To Strava</button>
+                                    </div>
+                                    <div style="flex: 1; border: 2px dashed gray; margin: 1em; display: flex; align-items: center; justify-content: center;">Drop GPX</div>
+                                </div>
                             </td>
                         </tr>
                     </tbody>

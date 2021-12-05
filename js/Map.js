@@ -36,8 +36,8 @@ export class Map
 
     resize(width, height)
     {
-        this.context.canvas.width = width;
-        this.context.canvas.height = height;
+        this._initialize(width, height);
+        this.redraw();
     }
 
     draw()
@@ -152,7 +152,7 @@ export class Map
                     if (this.selected_borders_item != item)
                     {
                         this.selected_borders_item = item;
-                        this.selectedBordersItemChanged();
+                        this.onSelectedBordersItemChanged();
                         return true;
                     }
                     
@@ -164,7 +164,7 @@ export class Map
         if (this.selected_borders_item)
         {
             this.selected_borders_item = null;
-            this.selectedBordersItemChanged();
+            this.onSelectedBordersItemChanged();
             return true;
         }
         

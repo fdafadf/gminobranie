@@ -54,6 +54,28 @@ table {
   background: white;
   box-shadow: 0px 0px 3px -1px rgb(163, 163, 163);
 }
+table tbody.menu-item {
+  display: none;
+}
+table.expanded-menu tbody.menu-item {
+  display: table-row-group;
+  visibility: visible;
+}
+table .menu-item input {
+  visibility: hidden;
+}
+table.expanded-menu .menu-item input {
+  visibility: visible;
+}
+table.selectable th:nth-child(1),
+table.selectable td:nth-child(1) {
+  border-right: none;
+  padding-right: 0;
+}
+table.selectable th:nth-child(2),
+table.selectable td:nth-child(2) {
+  border-left: none;
+}
 th, td {
   border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 1em;
@@ -68,14 +90,17 @@ tr.selected:hover {
 tr:hover {
   background-color: #f5f5f5;
 }
-td.action {
+td.action,
+th.action {
   opacity: 0.1;
   cursor: pointer;
+  width: 16px;
 }
 tr:hover td.action {
     opacity: 1;
 }
-td.action:hover {
+td.action:hover,
+th.action:hover {
     opacity: 1;
     background: linear-gradient(#FDFDFD, #F0F0F0);
 }
@@ -105,18 +130,35 @@ ion-icon {
   height: 16px;
 }
 #side {
-    overflow: auto;
+    overflow-y: auto;
 }
 th.center {
     display: flex;
     align-items: center;
     justify-content: center;
 }
-#activities_table td:first-child {
+.data-type-date {
   text-align: right;
 }
 #map-container {
     margin: 0.5em;
     background: white;
     flex: 1;
+}
+tbody.drop {
+  display: none;
+}
+table.drop * {
+  visibility: hidden;
+}
+.logo {
+  margin: 0.5em;
+  background-color: white;
+  align-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  box-shadow: 0px 0px 3px -1px rgb(163, 163, 163);
+}
+.logo img {
+  height: calc(3em - 5px);
 }

@@ -28,7 +28,7 @@ export class MapBorders
         
         for (let item of this.gminy.shapes.items)
         {
-            context.fillStyle = item.visited ? this.shape_background_visited : this.shape_background;
+            context.fillStyle = item.visited_count > 0 ? this.shape_background_visited : this.shape_background;
 
             for (let path of item.paths)
             {
