@@ -129,7 +129,11 @@ export class Map
         this.mouse.position.x = e.offsetX;
         this.mouse.position.y = e.offsetY;
 
-        if (this._updateSelectedBordersItem(e.offsetX, e.offsetY) || this.mouse.drag.x >= 0)
+        if (this.mouse.drag.x >= 0)
+        {
+            this.draw();
+        }
+        else if (this._updateSelectedBordersItem(e.offsetX, e.offsetY))
         {
             this.draw();
         }

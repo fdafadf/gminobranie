@@ -28,11 +28,13 @@ export class MapBorders
         context.lineWidth = 1 / transform.scale;
         context.shadowColor = 'rgb(163, 163, 163)';
         context.shadowBlur = 3;
+        context.fillStyle = 'hsl(195, 80%, 95%)';
         
         for (let item of this.kraj.shapes.items)
         {
             for (let path of item.paths)
             {
+                context.fill(path);
                 context.stroke(path);
             }
         }
