@@ -21,6 +21,20 @@ export class MapBorders
         }
     }
 
+    drawPreviewTo(context, transform)
+    {
+        context.strokeStyle = 'gray';
+        context.lineWidth = 1 / transform.scale;
+        
+        for (let item of this.wojewodztwa.shapes.items)
+        {
+            for (let path of item.paths)
+            {
+                context.stroke(path);
+            }
+        }
+    }
+
     drawTo(context, transform)
     {
         context.filter = 'none';

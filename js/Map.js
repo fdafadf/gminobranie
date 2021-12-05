@@ -57,6 +57,12 @@ export class Map
 
         this.context.drawImage(this.buffer, 0, 0);
         this._transformContext(this.context, this.transform);
+
+        if (this.mouse.drag.x >= 0)
+        {
+            this.borders.drawPreviewTo(this.context, this.transform);
+        }
+
         this.context.lineWidth = 2 / this.transform.scale;
         this.context.strokeStyle = 'black';
         
@@ -117,11 +123,15 @@ export class Map
         {
             this.transform.x += (e.offsetX - this.mouse.drag.x) / this.transform.scale;
             this.transform.y -= (e.offsetY - this.mouse.drag.y) / this.transform.scale;
+            this.mouse.drag.x = -1;
+            this.mouse.drag.y = -1;
             this.redraw();
         }
-
-        this.mouse.drag.x = -1;
-        this.mouse.drag.y = -1;
+        else
+        {
+            this.mouse.drag.x = -1;
+            this.mouse.drag.y = -1;
+        }
     }
 
     _onMouseMove(e)
