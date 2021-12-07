@@ -195,6 +195,7 @@ export class App
                 index++;
             }
 
+            this._handleActivityCollectionModified();
             this.elements.status_bar.style.display = 'none';
             e.target.disabled = false;
         }
