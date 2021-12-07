@@ -191,6 +191,7 @@ export class App
 
                 activity.streams = await this.strava.getActivityStreams(activity.id);
                 await this.database.add('Activities', activity);
+                this._handleActivityLoadedFromDatabase(activity);
                 index++;
             }
 
