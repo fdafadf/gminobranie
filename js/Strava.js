@@ -17,7 +17,7 @@ export class ConnectionManager
 
         if (params.has('code'))
         {
-            if (new Date().getTime() - params.get('state') < 60000)
+            if (new Date().getTime() - params.get('state') < 10000)
             {
                 let code = params.get('code');
                 await this.loadAccesToken(`https://www.strava.com/api/v3/oauth/token?client_id=${this.client_id}&client_secret=${this.client_secret}&code=${code}&grant_type=authorization_code`);
@@ -42,11 +42,6 @@ export class ConnectionManager
         {
             await this.getAthlete();
         }
-
-        //this.authorize_response = {"token_type":"Bearer","expires_at":1638811516,"expires_in":21600,"refresh_token":"99c70051ac9e869ec7116eb598c6a6f09d7204dc","access_token":"5974257ed99b3d6f57dd8b38bfa2ba85b621cfdf","athlete":{"id":15198869,"username":null,"resource_state":2,"firstname":"Paweł","lastname":"S","bio":"","city":"Wrocław","state":"Lower Silesian Voivodeship","country":"Poland","sex":"M","premium":false,"summit":false,"created_at":"2016-05-15T15:02:05Z","updated_at":"2021-11-30T18:31:25Z","badge_type_id":0,"weight":89.0,"profile_medium":"https://d3nn82uaxijpm6.cloudfront.net/assets/avatar/athlete/medium-bee27e393b8559be0995b6573bcfde897d6af934dac8f392a6229295290e16dd.png","profile":"https://d3nn82uaxijpm6.cloudfront.net/assets/avatar/athlete/large-800a7033cc92b2a5548399e26b1ef42414dd1a9cb13b99454222d38d58fd28ef.png","friend":null,"follower":null}};
-        //this.authorize_response.bearer = `Bearer ${this.authorize_response.access_token}`;
-        //this.athlete = this.authorize_response.athlete;
-        //this.onConnected();
     }
 
     disconnect()
