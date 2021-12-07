@@ -15,11 +15,14 @@ export class ConnectionManager
     {
         let params = new URLSearchParams(window.location.search);
 
-        if (params.has('code'))
+        if (params.has('code') && params.has('state'))
         {
-            if (new Date().getTime() - params.get('state') < 10000)
+            let code = params.get('code');
+            let state = params.get('state');
+
+            if (state == localStorage.getItem('last_oauth_state'))
             {
-                let code = params.get('code');
+                localStorage.removeItem('last_oauth_state');
                 await this.loadAccesToken(`https://www.strava.com/api/v3/oauth/token?client_id=${this.client_id}&client_secret=${this.client_secret}&code=${code}&grant_type=authorization_code`);
                 await this.getAthlete();
             }
@@ -80,12 +83,6 @@ export class ConnectionManager
     {
         return await this.fetchText(`https://www.strava.com/api/v3/routes/${route_id}/export_gpx`);
     }
-    
-    async getCode()
-    {
-        window.location.href = `https://www.strava.com/oauth/authorize?client_id=${this.client_id}&redirect_uri=${this.redirect_uri}&response_type=code&approval_prompt=auto&scope=activity:read&state=${new Date().getTime()}`;
-        throw 'Authorization Redirect';
-    }
 
     async getAccessToken()
     {
@@ -102,8 +99,10 @@ export class ConnectionManager
         }
         else
         {
-            let code = await this.getCode();
-            oauth = await this.loadAccesToken(`https://www.strava.com/api/v3/oauth/token?client_id=${this.client_id}&client_secret=${this.client_secret}&code=${code}&grant_type=authorization_code`);
+            let last_oauth_state = new Date().getTime();
+            localStorage.setItem('last_oauth_state', last_oauth_state);
+            window.location.href = `https://www.strava.com/oauth/authorize?client_id=${this.client_id}&redirect_uri=${this.redirect_uri}&response_type=code&approval_prompt=auto&scope=activity:read&state=${last_oauth_state}`;
+            throw 'Authorization Redirect';
         }
 
         return oauth.bearer;
