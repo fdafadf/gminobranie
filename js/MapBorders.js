@@ -1,3 +1,5 @@
+import { SimpleGeometry } from "./SimpleGeometry.js";
+
 export class MapBorders
 {
     shape_background = 'white';
@@ -19,6 +21,7 @@ export class MapBorders
             top: gminy.shapes.max_x, 
             bottom: gminy.shapes.min_x 
         }
+        this.path_test_context = document.createElement('canvas').getContext("2d");
     }
 
     drawPreviewTo(context, transform)
@@ -76,6 +79,39 @@ export class MapBorders
             for (let path of item.paths)
             {
                 context.stroke(path);
+            }
+        }
+    }
+
+    updateVisitedCount(activity, remove)
+    {
+        let ride_bounding_rectangle = SimpleGeometry.getPointsBoundingRectangle(activity.path);
+                
+        for (let item of this.gminy.shapes.items)
+        {
+            let item_bounding_rectangle = { left: item.min_x, right: item.max_x, top: item.max_y, bottom: item.min_y };
+            
+            if (SimpleGeometry.areRectanglesOverlap(ride_bounding_rectangle, item_bounding_rectangle))
+            {
+                paths: for (let path of item.paths)
+                {
+                    for (let point of activity.path)
+                    {
+                        if (this.path_test_context.isPointInPath(path, point[0], point[1]))
+                        {
+                            if (remove)
+                            {
+                                item.visited_count--;
+                            }
+                            else
+                            {
+                                item.visited_count++;
+                            }
+
+                            break paths;
+                        }
+                    }
+                }
             }
         }
     }

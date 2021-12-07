@@ -19,7 +19,7 @@ export class Map
         this.transform.y = -borders.boundaries.top / 2;
         this._initialize(width, height);
         this.redraw();
-        this.element.addEventListener('wheel', this._onWheel.bind(this));
+        this.element.addEventListener('wheel', this._onWheel.bind(this), { passive: false });
         this.element.addEventListener('mousedown', this._onMouseDown.bind(this));
         this.element.addEventListener('mouseup', this._onMouseUp.bind(this));
         this.element.addEventListener('mousemove', this._onMouseMove.bind(this));
@@ -73,8 +73,16 @@ export class Map
                 this.context.stroke(path);
             }
         }
+        
+        this.context.strokeStyle = 'red';
 
-        this.activities.drawTo(this.context, this.transform);
+        for (let activity of this.activities.items)
+        {
+            if (activity.hover)
+            {
+                this.context.stroke(activity.path2d);
+            }
+        }
     }
 
     redraw()
@@ -92,6 +100,7 @@ export class Map
         context.strokeStyle = 'gray';
         this._transformContext(context, transform);
         this.borders.drawTo(context, transform);
+        this.activities.drawTo(context, transform);
     }
 
     _transformContext(context, transform)
@@ -105,9 +114,11 @@ export class Map
         context.translate(-c_x, -c_y);
     }
 
-    _onWheel(event)
+    _onWheel(e)
     {
-        this.transform.scale *= event.deltaY < 0 ? 1.2 : 0.8;
+        e.preventDefault();
+        e.stopPropagation();
+        this.transform.scale *= e.deltaY < 0 ? 1.2 : 0.8;
         this.redraw();
     }
 

@@ -2,8 +2,8 @@ export class SimpleGeometry
 {
     static getPointsBoundingRectangle(points)
     {
-        let xs = points.map(p => p.x);
-        let ys = points.map(p => p.y);
+        let xs = points.map(p => p[0]);
+        let ys = points.map(p => p[1]);
         let left = Math.min.apply(Math, xs);
         let right = Math.max.apply(Math, xs);
         let top = Math.max.apply(Math, ys);

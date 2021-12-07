@@ -19,7 +19,7 @@
             <table>
                 <tr>
                     <th>Activities</th>
-                    <td id="activities_counter"></td>
+                    <td id="activities-counter"></td>
                 </tr>
             </table>
         </div>
@@ -27,7 +27,7 @@
             <table>
                 <tr>
                     <th>Passed</th>
-                    <td id="passed_counter"></td>
+                    <td id="passed-counter"></td>
                 </tr>
             </table>
         </div>
@@ -39,9 +39,25 @@
                 </tr>
             </table>
         </div>
-        <div style="flex: 1;"></div>
+        <div style="flex: 1; align-items: center; align-content: center; display: flex;">
+            <div class="blink" style="margin: auto; color: #555; display: none;" id="status-bar">Downloading Strava Activities...</div>
+        </div>
         <div class="logo">
             <img src="logo.png" />
+        </div>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th><i data-feather="user"></i></th>
+                    <td class="action disconnected" id="connect-button">
+                        <div>
+                            <div>Connect To Strava</div>
+                            <div></div>
+                            <div>Disconnect</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </header>
     <main>
@@ -51,27 +67,28 @@
         </div>
         <div id="side">
             <div class="table-container">
-                <table id="activities_table" class="selectable">
+                <table id="activities-table" class="selectable">
                     <thead>
                         <tr>
                             <th><input type="checkbox" /></th>
                             <th>Date</th>
+                            <th>Distance</th>
                             <th>Name</th>
                             <th class="action menu-button"><i data-feather="menu"></i></th>
                         </tr>
                     </thead>
                     <tbody class="drop">
                         <tr>
-                            <td colspan="4" style="text-align: center; background-color: #f5fff5;">Upload New Files</td>
+                            <td colspan="5" style="text-align: center; background-color: #f5fff5;">Upload New Files</td>
                         </tr>
                     </tbody>
                     <tbody class="menu-item">
                         <tr>
-                            <td colspan="4">
+                            <td colspan="5">
                                 <div style="display: flex; flex-direction: row;">
                                     <div>
                                         <button id="remove-button">Remove Selected</button>
-                                        <button id="connect-button">Connect To Strava</button>
+                                        <button id="fetch-button">Fetch From Strava</button>
                                     </div>
                                     <div style="flex: 1; border: 2px dashed gray; margin: 1em; display: flex; align-items: center; justify-content: center;">Drop GPX</div>
                                 </div>

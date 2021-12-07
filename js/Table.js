@@ -1,8 +1,8 @@
 export class Table
 {
-    constructor(selector)
+    constructor(element)
     {
-        this.element = document.querySelector(selector);
+        this.element = element;
         this.items = this.element.querySelector('.items');
         this.menu = this.element.querySelector('tbody.menu-item');
         this.menu_button = this.element.querySelector('.menu-button');
@@ -23,25 +23,53 @@ export class Table
         let td_checkbox = document.createElement('td');
         let td_date = document.createElement('td');
         let td_name = document.createElement('td');
+        let td_distance = document.createElement('td');
         let checkbox = document.createElement('input');
+        let a_name = document.createElement('a');
         checkbox.type = 'checkbox';
-        try { td_date.innerText = new Date(activity.time).toLocaleString(); } 
-        catch { td_date.innerText = activity.time; }
+        try { td_date.innerText = new Date(activity.start_date).toLocaleDateString(); } 
+        catch { td_date.innerText = activity.start_date; }
+        a_name.innerText = activity.name;
+        a_name.href = `https://www.strava.com/activities/${activity.id}`;
+        a_name.target = '_blank';
         td_date.classList.add('data-type-date');
-        td_name.innerText = activity.name;
+        td_distance.classList.add('data-type-date');
+        td_name.appendChild(a_name);
         td_name.setAttribute('colspan', '2');
+        try 
+        { 
+            td_distance.innerText = activity.distance 
+                ? `${Math.round(parseFloat(activity.distance) / 1000)} km`
+                : '';
+        } 
+        catch {}
         td_checkbox.classList.add('menu-item');
         td_checkbox.appendChild(checkbox);
         tr.appendChild(td_checkbox);
         tr.appendChild(td_date);
+        tr.appendChild(td_distance);
         tr.appendChild(td_name);
         tr.item = activity;
+        tr.onmouseenter = this._handleRowMouseEnter.bind(this);
+        tr.onmouseleave = this._handleRowMouseLeave.bind(this);
         this.items.appendChild(tr);
     }
 
-    get selectedRows()
+    get selected_rows()
     {
         return [...this.items.querySelectorAll('input:checked')].map(input => input.closest('tr'));
+    }
+
+    _handleRowMouseEnter(e)
+    {
+        e.target.closest('tr').item.hover = true;
+        this.onRowHoverChanged();
+    }
+
+    _handleRowMouseLeave(e)
+    {
+        e.target.closest('tr').item.hover = false;
+        this.onRowHoverChanged();
     }
 
     _handleDragOver(e)
@@ -88,7 +116,7 @@ export class Table
             });
         }
 
-        this.noFilesReceived(await Promise.all([...e.dataTransfer.files].map(readFile)));
+        this.onFilesReceived(await Promise.all([...e.dataTransfer.files].map(readFile)));
     }
 
     _onMenuButton()
