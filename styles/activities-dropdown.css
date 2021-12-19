@@ -1,0 +1,32 @@
+.strava {
+    display: none;
+}
+
+#year-button .count {
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+.not-fetched .strava.fetch {
+    display: inline-block;
+}
+
+.in-progress .strava.progress {
+    display: inline-flex;
+    padding: 1em;
+}
+
+.synchronized .strava.synchronize {
+    display: inline-block;
+}
+
+.strava-disabled .button.strava {
+    cursor: default;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+#year-button tr:last-child td {
+    border: 0;
+    text-align: center;
+}

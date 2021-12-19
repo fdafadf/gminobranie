@@ -6,27 +6,51 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Gminobranie</title>
     <link rel="stylesheet" href="default.css" type="text/css" />
+    <link rel="stylesheet" href="styles/strava-connect-button.css" type="text/css" />
+    <link rel="stylesheet" href="styles/activities-table.css" type="text/css" />
+    <link rel="stylesheet" href="styles/activities-dropdown.css" type="text/css" />
+    <link rel="stylesheet" href="styles/chart.css" type="text/css" />
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/roboto">
     <script type="module" src="main.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4-src.js" integrity="sha512-v9fKB/Tdskpid8kkFcCde7j8nyykKK9fBAZIU8pzTuMIOMJYccsutTxn8qUS/p/32FG/ynVrsbj+dsaya/jNEg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="module" src="https://unpkg.com/ionicons@5.0.0/dist/ionicons/ionicons.esm.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/polyline@1.1.1/src/polyline.min.js"></script>
 </head>
 <body>
+    <div id="files-dialog">
+        <div class="dialog open">
+            <div class="label">Processing files...</div>
+            <div class="bar">
+            </div>
+        </div>
+    </div>
+    <div id="chart-dialog" class="dialog full-screen"></div>
     <div class="loader"></div>
-    <header>
+    <header class="blured">
         <div class="table-container">
             <table>
                 <tr>
-                    <th>Activities</th>
-                    <td id="activities-counter"></td>
+                    <td class="button disabled"><i data-feather="menu"></i></td>
                 </tr>
             </table>
         </div>
         <div class="table-container">
             <table>
                 <tr>
-                    <th>Passed</th>
+                    <th>Activities</th>
+                    <td id="year-button">&nbsp;</td>
+                    <td id="activities-counter" style="padding: 0;"></td>
+                    <td id="chart-button" class="button"><i data-feather="trending-up"></i></td>
+                    <td style="padding: 0;"></td>
+                    <td id="activity-list-button" class="button"><i data-feather="list"></i></td>
+                </tr>
+            </table>
+        </div>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Visited</th>
                     <td id="passed-counter"></td>
                 </tr>
             </table>
@@ -42,22 +66,22 @@
         <div style="flex: 1; align-items: center; align-content: center; display: flex;">
             <div class="blink" style="margin: auto; color: #555; display: none;" id="status-bar">Downloading Strava Activities...</div>
         </div>
-        <div class="logo">
+        <!-- <div class="logo">
             <img src="logo.png" />
-        </div>
-        <div class="table-container">
+        </div> -->
+        <div class="table-container" id="notifications">
             <table>
                 <tr>
-                    <th><i data-feather="user"></i></th>
-                    <td class="action disconnected" id="connect-button">
-                        <div>
-                            <div>Connect To Strava</div>
-                            <div></div>
-                            <div>Disconnect</div>
-                        </div>
+                    <td class="notification hidden">
+                        <div></div>
                     </td>
+                    <th class="button"><i data-feather="bell"></i></th>
+                    <td class="counter">0</td>
                 </tr>
             </table>
+        </div>
+        <div style="align-items: center; display: flex; padding: 1em;">
+            <a href="https://github.com/fdafadf/gminobranie" target="_blank"><i data-feather="github"></i></a>
         </div>
     </header>
     <main>
@@ -65,41 +89,12 @@
             <div id="map-container">
             </div>
         </div>
-        <div id="side">
-            <div class="table-container">
-                <table id="activities-table" class="selectable">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" /></th>
-                            <th>Date</th>
-                            <th>Distance</th>
-                            <th>Name</th>
-                            <th class="action menu-button"><i data-feather="menu"></i></th>
-                        </tr>
-                    </thead>
-                    <tbody class="drop">
-                        <tr>
-                            <td colspan="5" style="text-align: center; background-color: #f5fff5;">Upload New Files</td>
-                        </tr>
-                    </tbody>
-                    <tbody class="menu-item">
-                        <tr>
-                            <td colspan="5">
-                                <div style="display: flex; flex-direction: row;">
-                                    <div>
-                                        <button id="remove-button">Remove Selected</button>
-                                        <button id="fetch-button">Fetch From Strava</button>
-                                    </div>
-                                    <div style="flex: 1; border: 2px dashed gray; margin: 1em; display: flex; align-items: center; justify-content: center;">Drop GPX</div>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tbody class="items">
-                    </tbody>
-                </table>
-            </div>
+        <div id="side" class="blured">
         </div>
     </main>
+    <div style="visibility: hidden;">
+        <!-- <img src="images/pattern.jpg" id="background-pattern" /> -->
+        <audio id="audio-postman" src="audio/postman.mp3"></audio>
+    </div>
 </body>
 </html>

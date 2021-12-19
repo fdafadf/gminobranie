@@ -1,0 +1,42 @@
+#activities-table {
+    cursor: default;
+}
+
+#activities-table input {
+    visibility: hidden;
+}
+
+#activities-table.some-selected input {
+    visibility: initial;
+}
+
+#activities-table th input {
+    visibility: initial;
+}
+
+#activities-table .activities-table-menu td {
+    padding: 0;
+}
+
+#activities-table th:nth-child(1),
+#activities-table td:nth-child(1) {
+    border-right: none;
+    padding-right: 0;
+}
+
+#activities-table th:nth-child(2),
+#activities-table td:nth-child(2) {
+    border-left: none;
+}
+
+#activities-table td {
+    padding: 2px;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+#activities-table a {
+    max-width: 20em;
+    display: inline-block;
+    overflow: hidden;
+}

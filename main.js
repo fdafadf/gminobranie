@@ -1,4 +1,6 @@
 import { App } from "./js/App.js";
+import { MapDataLoader } from "./js/MapDataLoader.js";
+import { StravaConnectionManager } from "./js/StravaConnectionManager.js";
 
 async function onLoad()
 {
@@ -22,8 +24,12 @@ async function onLoad()
         }
     }
 
-    window.app = new App();
-    await window.app.initialize(borders_file_names, '/gminobranie');
+    let data_loader = new MapDataLoader('/gminobranie');
+    let strava = new StravaConnectionManager('/gminobranie');
+    await strava.checkAuthorizationRedirect();
+    let borders = await data_loader.fetchBorders(borders_file_names);
+    let app = window.app = new App(borders, strava);
+    await app.initialize();
     document.querySelector('.loader').remove();
 }
 

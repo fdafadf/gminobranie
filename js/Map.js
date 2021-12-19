@@ -1,8 +1,23 @@
+import { ActivitiesYear } from "./ActivitiesYear.js";
+import { ActivitiesGroupCollection } from "./ActivitiesGroupCollection.js";
+import { MapActivities } from "./MapActivities.js";
+import { MapBorders } from "./MapBorders.js";
+
 export class Map
 {
+    onCommunityHovered = () => {}
+
+    /**
+     * @param {number} width 
+     * @param {number} height 
+     * @param {MapBorders} borders 
+     * @param {MapActivities} activities 
+     */
     constructor(width, height, borders, activities)
     {
+        /** @type {MapBorders} */
         this.borders = borders;
+        /** @type {MapActivities} */
         this.activities = activities;
         this.transform = { scale: 1, x: 0, y: 0 };
         this.mouse = 
@@ -10,22 +25,43 @@ export class Map
             position: { x: -1, y: -1 },
             drag: { x: -1, y: -1 }
         };
+        /** @type {import("./App.js").ShapesItem} */
+        this.selected_community = null;
+        /** @type {import("./App.js").ShapesItem} */
+        this.hovered_community = null;
+        /** @type {() => void} */
+        this.onCommunitySelected = null;
         this.element = document.createElement('canvas');
         this.context = this.element.getContext('2d');
         this.buffer = new OffscreenCanvas(width, height);
+        /** @type {OffscreenCanvasRenderingContext2D} */
         this.buffer_context = this.buffer.getContext('2d');
         this.transform.scale = width / (borders.boundaries.right - borders.boundaries.left);
         this.transform.x = -borders.boundaries.right / 2;
         this.transform.y = -borders.boundaries.top / 2;
         this._initialize(width, height);
         this.redraw();
-        this.element.addEventListener('wheel', this._onWheel.bind(this), { passive: false });
-        this.element.addEventListener('mousedown', this._onMouseDown.bind(this));
-        this.element.addEventListener('mouseup', this._onMouseUp.bind(this));
-        this.element.addEventListener('mousemove', this._onMouseMove.bind(this));
-        this.element.addEventListener('mouseout', this._onMouseOut.bind(this));
+        let content_area = document.querySelector('div#content');
+        content_area.addEventListener('wheel', this._onWheel.bind(this), { passive: false });
+        content_area.addEventListener('mousedown', this._onMouseDown.bind(this));
+        content_area.addEventListener('mouseup', this._onMouseUp.bind(this));
+        content_area.addEventListener('mousemove', this._onMouseMove.bind(this));
+        content_area.addEventListener('mouseout', this._onMouseOut.bind(this));
     }
 
+    /**
+     * @param {ActivitiesGroupCollection} activities_year 
+     */
+    setActivities(activities_year)
+    {
+        this.borders.markActivities(activities_year);
+        this.activities.set(activities_year);
+    }
+
+    /**
+     * @param {number} width 
+     * @param {number} height 
+     */
     _initialize(width, height)
     {
         this.element.width = width;
@@ -34,6 +70,10 @@ export class Map
         this.buffer.height = height;
     }
 
+    /**
+     * @param {number} width 
+     * @param {number} height 
+     */
     resize(width, height)
     {
         this._initialize(width, height);
@@ -63,12 +103,23 @@ export class Map
             this.borders.drawPreviewTo(this.context, this.transform);
         }
 
-        this.context.lineWidth = 2 / this.transform.scale;
+        if (this.selected_community)
+        {
+            this.context.lineWidth = 2 / this.transform.scale;
+            this.context.strokeStyle = 'black';
+            
+            for (let path of this.selected_community.paths)
+            {
+                this.context.stroke(path);
+            }
+        }
+
+        this.context.lineWidth = 1 / this.transform.scale;
         this.context.strokeStyle = 'black';
         
-        if (this.selected_borders_item)
+        if (this.hovered_community)
         {
-            for (let path of this.selected_borders_item.paths)
+            for (let path of this.hovered_community.paths)
             {
                 this.context.stroke(path);
             }
@@ -78,9 +129,14 @@ export class Map
 
         for (let activity of this.activities.items)
         {
-            if (activity.hover)
+            if (activity.selected)
             {
-                this.context.stroke(activity.path2d);
+                let canvas_path = this.activities.canvas_paths.get(activity);
+
+                if (canvas_path)
+                {
+                    this.context.stroke(canvas_path);
+                }
             }
         }
     }
@@ -91,6 +147,10 @@ export class Map
         this.draw();
     }
 
+    /**
+     * @param {CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D} context 
+     * @param {*} transform 
+     */
     drawTo(context, transform)
     {
         context.resetTransform();
@@ -103,6 +163,10 @@ export class Map
         this.activities.drawTo(context, transform);
     }
 
+    /**
+     * @param {CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D} context 
+     * @param {*} transform 
+     */
     _transformContext(context, transform)
     {
         let c_x = context.canvas.width / 2 - transform.x;
@@ -114,6 +178,9 @@ export class Map
         context.translate(-c_x, -c_y);
     }
 
+    /**
+     * @param {*} e 
+     */
     _onWheel(e)
     {
         e.preventDefault();
@@ -122,18 +189,24 @@ export class Map
         this.redraw();
     }
 
+    /**
+     * @param {MouseEvent} e 
+     */
     _onMouseDown(e)
     {
-        this.mouse.drag.x = e.offsetX;
-        this.mouse.drag.y = e.offsetY;
+        this.mouse.drag.x = e.x;
+        this.mouse.drag.y = e.y;
     }
 
+    /**
+     * @param {MouseEvent} e 
+     */
     _onMouseUp(e)
     {
-        if (e.offsetX != this.mouse.drag.x || e.offsetY != this.mouse.drag.y)
+        if (e.x != this.mouse.drag.x || e.y != this.mouse.drag.y)
         {
-            this.transform.x += (e.offsetX - this.mouse.drag.x) / this.transform.scale;
-            this.transform.y -= (e.offsetY - this.mouse.drag.y) / this.transform.scale;
+            this.transform.x += (e.x - this.mouse.drag.x) / this.transform.scale;
+            this.transform.y -= (e.y - this.mouse.drag.y) / this.transform.scale;
             this.mouse.drag.x = -1;
             this.mouse.drag.y = -1;
             this.redraw();
@@ -142,31 +215,56 @@ export class Map
         {
             this.mouse.drag.x = -1;
             this.mouse.drag.y = -1;
+
+            if (this.hovered_community)
+            {
+                if (this.selected_community == this.hovered_community)
+                {
+                    this.selected_community = null;
+                    this.onCommunitySelected?.();
+                }
+                else
+                {
+                    this.selected_community = this.hovered_community;
+                    this.onCommunitySelected?.();
+                }
+            }
         }
     }
 
+    /**
+     * @param {MouseEvent} e 
+     */
     _onMouseMove(e)
     {
-        this.mouse.position.x = e.offsetX;
-        this.mouse.position.y = e.offsetY;
+        this.mouse.position.x = e.x;
+        this.mouse.position.y = e.y;
 
         if (this.mouse.drag.x >= 0)
         {
             this.draw();
         }
-        else if (this._updateSelectedBordersItem(e.offsetX, e.offsetY))
+        else if (this._updateHoveredCommunity(e.x, e.y))
         {
             this.draw();
         }
     }
 
+    /**
+     * @param {MouseEvent} e 
+     */
     _onMouseOut(e)
     {
         this.mouse.position.x = -1;
         this.mouse.position.y = -1;
     }
 
-    _updateSelectedBordersItem(x, y)
+    /**
+     * @param {number} x 
+     * @param {number} y 
+     * @returns 
+     */
+    _updateHoveredCommunity(x, y)
     {
         for (let item of this.borders.gminy.shapes.items)
         {
@@ -174,10 +272,10 @@ export class Map
             {
                 if (this.context.isPointInPath(path, x, y))
                 {
-                    if (this.selected_borders_item != item)
+                    if (this.hovered_community != item)
                     {
-                        this.selected_borders_item = item;
-                        this.onSelectedBordersItemChanged();
+                        this.hovered_community = item;
+                        this.onCommunityHovered();
                         return true;
                     }
                     
@@ -186,10 +284,10 @@ export class Map
             }
         }
 
-        if (this.selected_borders_item)
+        if (this.hovered_community)
         {
-            this.selected_borders_item = null;
-            this.onSelectedBordersItemChanged();
+            this.hovered_community = null;
+            this.onCommunityHovered();
             return true;
         }
         

@@ -8,6 +8,9 @@ const VERSIONS = [VERSION_3, VERSION_3_MEMO, VERSION_4_MEMO, VERSION_FOX_9]
 
 export class DBaseFile
 {
+    /**
+     * @param {DataView} data 
+     */
     constructor(data)
     {
         let reader = new DataViewReader(data);
@@ -26,9 +29,16 @@ export class DBaseFile
         }
 
         this.field_descriptors = DBaseFile._readFieldDescriptors(reader);
+        /** @type {string[][]} */
         this.rows = DBaseFile._readRows(reader, this.field_descriptors, row_count);
     }
 
+    /**
+     * @param {DataViewReader} reader 
+     * @param {{ name: string, type: string, length: number }[]} field_descriptors 
+     * @param {*} row_count 
+     * @returns 
+     */
     static _readRows(reader, field_descriptors, row_count)
     {
         let rows = [];
@@ -45,7 +55,7 @@ export class DBaseFile
                 switch (type)
                 {
                     case 'C':
-                        row[j] = reader.getString(length);
+                        row[j] = reader.getString(length).trim();
                         break;
                     case 'N':
                         row[j] = reader.getString(length).trim();
@@ -66,6 +76,10 @@ export class DBaseFile
         return rows;
     }
 
+    /**
+     * @param {DataViewReader} reader
+     * @returns 
+     */
     static _readFieldDescriptors(reader)
     {
         let descriptors = [];
@@ -80,6 +94,10 @@ export class DBaseFile
         return descriptors;
     }
     
+    /**
+     * @param {DataViewReader} reader
+     * @returns 
+     */
     static _readFieldDescriptor(reader)
     {
         let name = reader.getString(11);

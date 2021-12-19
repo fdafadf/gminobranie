@@ -1,0 +1,30 @@
+
+.chart {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .chart > div {
+    display: flex;
+    flex-direction: row;
+    padding-left: 1em;
+    padding-right: 1em;
+  }
+  .chart > div:nth-child(1) {
+    flex: 1;
+    align-items: end;
+    padding-top: 1em;
+  }
+  .chart > div:nth-child(n+2) {
+    padding-top: 1em;
+    padding-bottom: 1em;
+  }
+  .chart > div:nth-child(1) > div {
+    background-color: rgb(219, 221, 224);
+    margin-left: 1em;
+    margin-right: 1em;
+  }
+  .chart > div > div {
+    flex: 1;
+    text-align: center;
+  }

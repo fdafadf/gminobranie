@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "lib": ["ES2015", "DOM"],
+        "checkJs": true,
+        "downlevelIteration": true,
+        "noImplicitAny": true
+    },
+    "include": ["js/*"]
+  }

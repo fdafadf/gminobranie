@@ -1,3 +1,5 @@
+import { ActivitiesYear } from "./ActivitiesYear.js";
+import { ActivitiesGroupCollection } from "./ActivitiesGroupCollection.js";
 import { SimpleGeometry } from "./SimpleGeometry.js";
 
 export class MapBorders
@@ -5,25 +7,33 @@ export class MapBorders
     shape_background = 'white';
     shape_background_visited = '#c5ffc5';
 
-    constructor({ kraj, wojewodztwa, gminy })
+    /**
+     * @param {import("./App.js").Borders} borders 
+     */
+    constructor(borders)
     {
-        MapBorders.createPath2dInShapefile(kraj.shapes);
-        MapBorders.createPath2dInShapefile(wojewodztwa.shapes);
-        MapBorders.createPath2dInShapefile(gminy.shapes);
-        MapBorders.calculateColors(gminy);
-        this.kraj = kraj;
-        this.wojewodztwa = wojewodztwa;
-        this.gminy = gminy;
+        MapBorders.createPath2dInShapefile(borders.kraj.shapes);
+        MapBorders.createPath2dInShapefile(borders.wojewodztwa.shapes);
+        MapBorders.createPath2dInShapefile(borders.gminy.shapes);
+        MapBorders.calculateColors(borders.gminy);
+        this.kraj = borders.kraj;
+        this.wojewodztwa = borders.wojewodztwa;
+        /** @type {import("./App.js").LabeledShapes} */
+        this.gminy = borders.gminy;
         this.boundaries = 
         { 
-            left: gminy.shapes.min_x, 
-            right: gminy.shapes.max_x, 
-            top: gminy.shapes.max_x, 
-            bottom: gminy.shapes.min_x 
+            left: borders.gminy.shapes.min_x, 
+            right: borders.gminy.shapes.max_x, 
+            top: borders.gminy.shapes.max_x, 
+            bottom: borders.gminy.shapes.min_x 
         }
         this.path_test_context = document.createElement('canvas').getContext("2d");
     }
 
+    /**
+     * @param {CanvasRenderingContext2D} context 
+     * @param {*} transform 
+     */
     drawPreviewTo(context, transform)
     {
         context.strokeStyle = 'gray';
@@ -38,6 +48,10 @@ export class MapBorders
         }
     }
 
+    /**
+     * @param {CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D} context 
+     * @param {*} transform 
+     */
     drawTo(context, transform)
     {
         context.filter = 'none';
@@ -62,7 +76,7 @@ export class MapBorders
         
         for (let item of this.gminy.shapes.items)
         {
-            context.fillStyle = item.visited_count > 0 ? this.shape_background_visited : item.background_color;
+            context.fillStyle = item.activities?.length > 0 ? this.shape_background_visited : item.background_color;
             //context.fillStyle = item.background_color;
 
             for (let path of item.paths)
@@ -82,10 +96,106 @@ export class MapBorders
             }
         }
     }
-
-    updateVisitedCount(activity, remove)
+    
+    /*
+    updateActivitiesYearVisitedCount(activities_year, activity)
     {
+        let shapes = this.gminy.shapes.items;
+        let visits = {};
+
         let ride_bounding_rectangle = SimpleGeometry.getPointsBoundingRectangle(activity.path);
+                
+        for (let shape of shapes)
+        {
+            let item_bounding_rectangle = { left: shape.min_x, right: shape.max_x, top: shape.max_y, bottom: shape.min_y };
+            
+            if (SimpleGeometry.areRectanglesOverlap(ride_bounding_rectangle, item_bounding_rectangle))
+            {
+                paths: for (let path of shape.paths)
+                {
+                    for (let point of activity.path)
+                    {
+                        if (this.path_test_context.isPointInPath(path, point[0], point[1]))
+                        {
+                            debugger
+
+                            if (remove)
+                            {
+                                
+                                shape.visited_count--;
+                            }
+                            else
+                            {
+                                shape.visited_count++;
+                            }
+
+                            break paths;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    calculateActivitiesYearVisitedCount(activities_year)
+    {
+        for (let item of this.gminy.shapes.items)
+        {
+            item.visited_count_backup = item.visited_count;
+            item.visited_count = 0;
+        }
+
+        this.clearVisitedCount();
+        this.updateVisitedCount(activities_year.gpx.activities);
+        this.updateVisitedCount(activities_year.strava.activities_with_streams);
+        debugger
+        activities_year.visited = this.gminy.shapes.items.filter(item => item.visited_count > 0).length;
+
+        for (let item of this.gminy.shapes.items)
+        {
+            item.visited_count = item.visited_count_backup;
+        }
+    }
+    
+    clearVisitedCount()
+    {
+        for (let item of this.gminy.shapes.items)
+        {
+            item.visited_count = 0;
+        }
+    }
+    */
+    
+    // /**
+    //  * @param {Activity[]} activities
+    //  * @param {boolean} remove 
+    //  */
+    // updateVisitedCounts(activities, remove)
+    // {
+    //     activities.forEach(activity => this.updateVisitedCount(activity, remove));
+    // }
+
+    /**
+     * @param {ActivitiesGroupCollection} activities_year
+     */
+    markActivities(activities_year)
+    {
+        for (let item of this.gminy.shapes.items)
+        {
+            let label = this.gminy.labels.rows[item.number - 1][1];
+            item.activities = activities_year.findActivitiesInCommunity(label);
+        }
+    }
+
+    /**
+     * @param {number[][]} latlng
+     * @returns {string[]}
+     */
+    calculateVisitedCommunities(latlng)
+    {
+        let visited_communities = [];
+        let ride_bounding_rectangle = SimpleGeometry.getPointsBoundingRectangle(latlng);
                 
         for (let item of this.gminy.shapes.items)
         {
@@ -95,27 +205,25 @@ export class MapBorders
             {
                 paths: for (let path of item.paths)
                 {
-                    for (let point of activity.path)
+                    for (let point of latlng)
                     {
                         if (this.path_test_context.isPointInPath(path, point[0], point[1]))
                         {
-                            if (remove)
-                            {
-                                item.visited_count--;
-                            }
-                            else
-                            {
-                                item.visited_count++;
-                            }
-
+                            visited_communities.push(this.gminy.labels.rows[item.number - 1][1]);
                             break paths;
                         }
                     }
                 }
             }
         }
+
+        return visited_communities;
     }
 
+    /**
+     * 
+     * @param {import("./App.js").Shapes} shape 
+     */
     static createPath2dInShapefile(shape)
     {
         for (let item of shape.items)
@@ -140,6 +248,9 @@ export class MapBorders
         }
     }
 
+    /**
+     * @param {import("./App.js").LabeledShapes} param0 
+     */
     static calculateColors({ shapes, labels })
     {
         let rows = labels.rows.map((row, index) => ({ number: index, code: row[1] }));

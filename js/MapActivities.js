@@ -1,38 +1,68 @@
+import { Activity } from "./Activity.js";
+import { ActivitiesYear } from "./ActivitiesYear.js";
+import { ActivitiesGroupCollection } from "./ActivitiesGroupCollection.js";
+
 export class MapActivities
 {
-    constructor()
+    /**
+     * @param {string} projection 
+     */
+    constructor(projection)
     {
+        /** @type {Activity[]} */
         this.items = [];
-        this.items.forEach(activity => activity.path2d = MapActivities.createPath2d(activity));
+        /** @type {Map<any, Path2D>} */
+        this.canvas_paths = new Map();
+        this.projection = projection;
     }
 
-    add(activity)
+    /**
+     * @param {ActivitiesGroupCollection} activities_year 
+     */
+    set(activities_year)
     {
-        activity.path2d = MapActivities.createPath2d(activity)
-        this.items.push(activity);
+        this.items = [...activities_year.activities.values()].filter(activity => activity.streams);
+
+        for (let activity of this.items)
+        {
+            if (! activity.is_accepted) continue;
+            if (this.canvas_paths.has(activity)) continue;
+            if (activity.streams?.latlng)
+            {
+                let canvas_path = MapActivities.createCanvasPath(activity.streams.latlng);
+                this.canvas_paths.set(activity, canvas_path);
+            }
+        }
     }
 
-    remove(activity)
-    {
-        this.items.splice(this.items.findIndex(a => a === activity), 1);
-    }
-
+    /**
+     * @param {CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D} context 
+     * @param {*} transform 
+     */
     drawTo(context, transform)
     {
         context.lineWidth = 2 / transform.scale;
         context.strokeStyle = '#4444aa';
+        context.strokeStyle = 'rgba(50, 50, 255, 0.4)';
         //context.shadowBlur = 7;
         //context.shadowColor = "lightgray";
 
-        for (let activity of this.items)
+        for (let item of this.items)
         {
-            context.stroke(activity.path2d);
+            let canvas_path = this.canvas_paths.get(item);
+
+            if (canvas_path)
+            {
+                context.stroke(canvas_path);
+            }
         }
     }
 
-    static createPath2d(activity)
+    /**
+     * @param {number[][]} path 
+     */
+    static createCanvasPath(path)
     {
-        let path = activity.path;
         let path2d = new Path2D();
         path2d.moveTo(path[0][0], path[0][1]);
     

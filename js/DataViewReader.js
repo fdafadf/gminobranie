@@ -1,5 +1,8 @@
 export class DataViewReader
 {
+    /**
+     * @param {DataView} data 
+     */
     constructor(data)
     {
         this.position = 0;
@@ -7,30 +10,46 @@ export class DataViewReader
         this.decoder = new TextDecoder("utf-8");
     }
 
-    readInt16(littleEndian)
+    /**
+     * @param {boolean} little_endian 
+     * @returns 
+     */
+    readInt16(little_endian)
     {
-        let value = this.data.getInt16(this.position, littleEndian);
+        let value = this.data.getInt16(this.position, little_endian);
         this.position += 2;
         return value;
     }
 
-    readInt32(littleEndian)
+    /**
+     * @param {boolean} little_endian 
+     * @returns 
+     */
+    readInt32(little_endian)
     {
-        let value = this.data.getInt32(this.position, littleEndian);
+        let value = this.data.getInt32(this.position, little_endian);
         this.position += 4;
         return value;
     }
     
-    readFloat64(littleEndian)
+    /**
+     * @param {boolean} little_endian 
+     * @returns 
+     */
+    readFloat64(little_endian)
     {
-        let value = this.data.getFloat64(this.position, littleEndian);
+        let value = this.data.getFloat64(this.position, little_endian);
         this.position += 8;
         return value;
     }
     
-    readFloat32(littleEndian)
+    /**
+     * @param {boolean} little_endian 
+     * @returns 
+     */
+    readFloat32(little_endian)
     {
-        let value = this.data.getFloat32(this.position, littleEndian);
+        let value = this.data.getFloat32(this.position, little_endian);
         this.position += 4;
         return value;
     }
@@ -47,6 +66,10 @@ export class DataViewReader
         return this.data.getUint8(this.position + offset);
     }
 
+    /**
+     * @param {number} max_length 
+     * @returns 
+     */
     getString(max_length)
     {
         for (var i = 0; i < max_length; i++)

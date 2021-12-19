@@ -1,211 +1,270 @@
 import { Map } from './Map.js';
 import { MapBorders } from './MapBorders.js';
 import { MapActivities } from './MapActivities.js';
-import { MapDataLoader } from './MapDataLoader.js';
-import { Table } from './Table.js';
-import { ConnectionManager } from './Strava.js';
-import { Database } from './Database.js';
+import { ActivitiesTable } from './ActivitiesTable.js';
+import { StravaConnectionManager } from './StravaConnectionManager.js';
+import { ActivitiesControl } from './ActivitiesControl.js';
+import { ToggleButton } from './ToggleButton.js';
+import { StravaConnectButton } from './StravaConnectButton.js';
+import { Chart } from './Chart.js';
+import { ProcesssFilesDialog } from './ProcesssFilesDialog.js';
+import { AppNotifications } from './AppNotifications.js';
+import { AppDatabase } from './AppDatabase.js';
+import { Activity } from './Activity.js';
+import { ActivitiesYear } from "./ActivitiesYear.js";
+import { ActivitiesYearControl } from './ActivitiesYearControl.js';
+import { handleDrop } from './App.handleDrop.js';
+import { handleFetchButtonSelected } from './App.handleFetchButtonSelected.js';
 
-class ConnectButton
-{
-    constructor(element)
-    {
-        this.element = element;
-        this.user_name_element = element.children[0].children[1];
-    }
-    
-    get user_name()
-    {
-        return this.user_name_element.innerText;
-    }
-
-    set user_name(value)
-    {
-        if (value)
-        {
-            this.element.classList.add('connected');
-            this.element.classList.remove('disconnected');
-        }
-        else
-        {
-            this.element.classList.add('disconnected');
-            this.element.classList.remove('connected');
-        }
-        
-        this.user_name_element.innerText = value ?? '';
-    }
-}
+/**
+ * @typedef {{ left: number, right: number, top: number, bottom: number }} Rectangle
+ * @typedef {{ min_x: number, max_x: number, min_y: number, max_y: number }} ShapesArea
+ * @typedef { ShapesArea & { background_color: any, background_color_selected: any, number: any, paths: Path2D[], activities: Activity[], parts: number[], points: number[] }} ShapesItem
+ * @typedef { ShapesArea & { items: ShapesItem[] }} Shapes
+ * @typedef {{ rows: string[][] }} Labels
+ * @typedef {{ shapes: Shapes, labels: Labels, projection: string }} LabeledShapes
+ * @typedef {{ kraj: { shapes: Shapes }, wojewodztwa: { shapes: Shapes }, gminy: LabeledShapes }} Borders
+ * @typedef {{ id: string, name: string, start_date: string, distance: string, source: string, visited_communities: string[], map?: { id: string, summary_polyline: string }, type: string, error?: any }} ActivityEntity
+ * @typedef {{ id: string, latlng: number[][], error?: any }} ActivityStreamsEntity
+ * @typedef {{ id: number, strava?: { all_pages_fetched: boolean, all_activities_downloaded: boolean, last_fetched_page: number }}} ActivitiesYearEntity
+ */
 
 export class App
 {
-    async initialize(borders_file_names, base_path)
+    /**
+     * @param {Borders} borders 
+     * @param {StravaConnectionManager} strava 
+     */
+    constructor(borders, strava)
     {
+        this.strava = strava;
         this.elements =
         {
-            fetch_button: document.querySelector('button#fetch-button'),
-            remove_button: document.querySelector('button#remove-button'),
+            header: document.querySelector('header'),
+            side: document.querySelector('div#side'),
+            chart_dialog: document.querySelector('#chart-dialog'),
+            chart_button: document.querySelector('td#chart-button'),
+            /** @type {HTMLElement} */
             map_container: document.querySelector('div#map-container'),
+            /** @type {HTMLElement} */
             passed_counter: document.querySelector('td#passed-counter'),
-            activities_table: document.querySelector('table#activities-table'),
             activities_counter: document.querySelector('td#activities-counter'),
+            /** @type {HTMLElement} */
             gmina: document.querySelector('td#gmina'),
-            connect_button: document.querySelector('td#connect-button'),
-            status_bar: document.querySelector('div#status-bar'),
         }
 
-        this.loaded_activities = {};
-        this.connect_button = new ConnectButton(this.elements.connect_button);
-        this.strava = new ConnectionManager(base_path);
-        this.database = new Database();
-        this.activities_table = new Table(this.elements.activities_table);
-        this.data_loader = new MapDataLoader(base_path);
-        this.borders = await this.data_loader.fetchBorders(borders_file_names);
-        this.map_borders = new MapBorders(this.borders);
-        this.map_activities = new MapActivities();
-        this.map = new Map(this.elements.map_container.clientWidth, this.elements.map_container.clientHeight, this.map_borders, this.map_activities);
+        this.elements.chart_button.addEventListener('click', this._handleChartButtonClick.bind(this));
+        this.elements.chart_dialog.addEventListener('click', this._handleChartDialogClick.bind(this));
+
+        this.activities = new ActivitiesControl();
+
+        this.connect_button = new StravaConnectButton();
+        this.connect_button.element.addEventListener('click', this._handleConnectButtonClick.bind(this));
+
+        this.activities_table = new ActivitiesTable();
+        this.activities_table.element_remove_button.addEventListener('click', this._handleRemoveButtonClick.bind(this));
+        this.activities_table.onSelectionChanged = this._handleTableSelectionChanged.bind(this);
+        
+        this.chart = new Chart();
+        
+        this.show_activities_list_button = new ToggleButton(document.querySelector('#activity-list-button'));
+        this.show_activities_list_button.checked = true;
+        this.show_activities_list_button.element.addEventListener('click', this._handleActivitiesListButtonClick.bind(this));
+    
+        this.processing_files_dialog = new ProcesssFilesDialog();
+
+        this.notifications = new AppNotifications();
+
+        this._handleFirstInteraction = this._handleFirstInteraction.bind(this);
+        window.addEventListener('click', this._handleFirstInteraction);
+        
+        this.map = new Map(this.elements.map_container.clientWidth, this.elements.map_container.clientHeight, new MapBorders(borders), new MapActivities(borders.gminy.projection));
+        this.map.onCommunityHovered = this._handleMapCommunityHovered.bind(this);
+        this.map.onCommunitySelected = this._handleMapCommunitySelected.bind(this);
+
+        this.elements.header.appendChild(this.connect_button.element);
+        this.elements.side.appendChild(this.activities_table.element);
+        this.elements.chart_dialog.appendChild(this.chart.element);
         this.elements.map_container.appendChild(this.map.element);
         
-        this.activities_table.onRowHoverChanged = this._handleActivityTableRowHoverChanged.bind(this);
-        this.map.onSelectedBordersItemChanged = this._handleSelectedBordersItemChanged.bind(this);
-        this.activities_table.onFilesReceived = this._handleFilesReceived.bind(this);
-        this.connect_button.element.addEventListener('click', this._handleConnectButtonClick.bind(this));
-        this.elements.fetch_button.addEventListener('click', this._handleFetchButtonClick.bind(this));
-        this.elements.remove_button.addEventListener('click', this._handleRemoveButtonClick.bind(this));
-        this._registerMapContainerResizeHandler();
+        this.database = new AppDatabase();
+    }
 
-        await this.strava.checkAuthorizationRedirect();
+    async initialize()
+    {
+        let activities = await this.database.getActivities();
+
+        for (let activity of activities)
+        {
+            await this.ensureActivitiesYear(activity.year);
+            this.activities.items.addActivity(activity);
+        }
+
+        let streams = await this.database.getActivityStreams();
+        
+        for (let activity_streams of streams)
+        {
+            let activity = this.activities.items.findActivity(activity_streams.id);
+
+            if (activity)
+            {
+                activity.streams = activity_streams;
+            }
+        };
         
         if (this.strava.is_connected)
         {
-            this._handleStravaConnected();
-        }
-
-        await this.loadActivitiesFromDatabase();
-    }
-
-    async loadActivitiesFromDatabase()
-    {
-        let activities = await this.database.items('Activities');
-
-        for (let activity_id in activities)
-        {
-            this._handleActivityLoadedFromDatabase(activities[activity_id]);
-        }
-        
-        this._handleActivityCollectionModified();
-    }
-
-    showActivity(activity)
-    {
-        this.activities_table.addRow(activity);
-        activity.path = activity.streams.filter(s => s.type == 'latlng')[0].data;
-        MapDataLoader.normalizeCoordinates(activity.path, this.borders.gminy.projection);
-        this.map_borders.updateVisitedCount(activity);
-        this.map_activities.add(activity);
-    }
-    
-    _handleStravaConnected()
-    {
-        this.connect_button.user_name = this.strava.athlete.firstname;
-    }
-    
-    _handleActivityLoadedFromDatabase(activity)
-    {
-        this.loaded_activities[activity.id] = activity;
-        if (activity.type == "VirtualRide") return;
-        this.showActivity(activity);
-    }
-
-    async _handleFilesReceived(files)
-    {
-        for (let file of files)
-        {
-            let activity = MapDataLoader.parseActivity(file);
-            await this.database.add('Activities', activity);
-            this.showActivity(activity);
-        }
-
-        this._handleActivityCollectionModified();
-    }
-
-    _handleActivityCollectionModified()
-    {
-        this.elements.passed_counter.innerText = this.borders.gminy.shapes.items.filter(item => item.visited_count > 0).length;
-        this.elements.activities_counter.innerText = this.map_activities.items.length;
-        this.map.redraw();
-    }
-
-    _handleActivityTableRowHoverChanged()
-    {
-        this.map.draw();
-    }
-
-    async _handleConnectButtonClick()
-    {
-        if (this.connect_button.user_name)
-        {
-            this.strava.disconnect();
-            this.connect_button.user_name = null;
+            await this._handleStravaConnected();
         }
         else
         {
-            this.connect_button.element.classList.add('disabled');
-            await this.strava.connect();
-            this._handleStravaConnected();
-            this.connect_button.element.classList.remove('disabled');
-        }
-    }
-
-    async _handleRemoveButtonClick(e)
-    {
-        for (let row of this.activities_table.selected_rows)
-        {
-            this.map_activities.remove(row.item);
-            this.map_borders.updateVisitedCount(row.item, true);
-            row.parentElement.removeChild(row);
-            this.database.delete('Activities', row.item.id);
+            this._handleStravaDisconnected();
         }
 
-        this._handleActivityTableRowHoverChanged();
-        this._handleActivityCollectionModified();
+        let current_year = new Date().getFullYear();
+        let current_activities_year = this.ensureActivitiesYear(current_year);
+        this.activities.refresh();
+
+        // Default selected year is current.
+        this.activities.dropdown.selected_row = await this.activities.ensureActivitiesYearRow(current_year, _ => current_activities_year);
+
+        // Load programmatically selected year.
+        await this._handleSelectedActivitiesYearChanged();
+
+        // Remove green labels for new activties.
+        this.activities._handleDropdownCollapse();
+
+        // Handlers.
+        this.activities.dropdown.onRowSelected = this._handleSelectedActivitiesYearChanged.bind(this);
+        window.addEventListener('dragover', this._handleDragOver.bind(this));
+        window.addEventListener('dragenter', this._handleDragEnter.bind(this));
+        window.addEventListener('drop', handleDrop.bind(this));
+        this._registerMapContainerResizeHandler();
     }
 
-    async _handleFetchButtonClick(e)
+    /**
+     * @param {number} year 
+     * @returns 
+     */
+    async ensureActivitiesYear(year)
     {
-        if (this.strava.is_connected)
-        {
-            e.target.disabled = true;
-            this.elements.status_bar.innerText = 'Loading...';
-            this.elements.status_bar.style.display = 'block';
-            let activities = await this.strava.getActivities();
-            let index = 1;
+        let activities_year = this.activities.items.get(year);
 
-            for (let activity of activities)
+        if (! activities_year)
+        {
+            activities_year = await this.database.getActivitiesYear(year);
+
+            if (! activities_year)
             {
-                this.elements.status_bar.innerText = `Loading ${index}/${activities.length}...`;
-
-                if (this.loaded_activities[activity.id])
+                let activities_year_entity =
                 {
-                    continue;
-                }
-
-                activity.streams = await this.strava.getActivityStreams(activity.id);
-                await this.database.add('Activities', activity);
-                this._handleActivityLoadedFromDatabase(activity);
-                index++;
+                    id: year
+                };
+                this.database.add('ActivitiesYear', activities_year_entity);
+                activities_year = new ActivitiesYear(activities_year_entity);
             }
 
-            this._handleActivityCollectionModified();
-            this.elements.status_bar.style.display = 'none';
-            e.target.disabled = false;
+            this.activities.items.add(activities_year);
+        }
+
+        return activities_year;
+    }
+
+    /**
+     * @param {Activity} activity 
+     */
+    async removeActivity(activity)
+    {
+        this.database.removeActivity(activity);
+        this.database.removeActivityStreams(activity.streams);
+        this.activities.items.removeActivity(activity);
+    }
+     
+    /**
+     * @param {Activity} activity 
+     */
+    async addActivityStreams(activity)
+    {
+        activity.entity.visited_communities = this.map.borders.calculateVisitedCommunities(activity.streams.latlng);
+        await this.database.updateActivity(activity);
+        await this.database.addActivityStreams(activity.streams);
+    }
+
+    /**
+     * @param {DragEvent} e 
+     * @returns 
+     */
+    _handleDragOver(e)
+    {
+        e.preventDefault();
+
+        // @ts-ignore
+        if (e.dataTransfer.types.includes("Files"))
+        {
+            e.dataTransfer.dropEffect = 'copy';
+            return true;
+        }
+        else
+        {
+            e.dataTransfer.dropEffect = 'none';
         }
     }
 
-    _handleSelectedBordersItemChanged()
+    /**
+     * @param {DragEvent} e 
+     * @returns 
+     */
+    _handleDragEnter(e)
     {
-        if (this.map.selected_borders_item)
+    }
+
+    /**
+     * @param {DragEvent} e 
+     * @returns 
+     */
+    _handleDragLeave(e)
+    {
+        e.preventDefault();
+    }
+    
+    async _handleSelectedActivitiesYearChanged()
+    {
+        let selected_activities_year = this.activities.selected_activities_year_control.item;
+        this.activities_table.set(selected_activities_year);
+        this.map.setActivities(selected_activities_year);
+        await this._handleSelectedActivitiesYearDataChanged();
+        this.map.redraw();
+    }
+    
+    async _handleSelectedActivitiesYearDataChanged()
+    {
+        let selected_activities_year = this.activities.selected_activities_year_control.item;
+        this.activities.dropdown.element_label.innerText = `${selected_activities_year.title}`;
+        this.elements.passed_counter.innerText = selected_activities_year.findVisitedCommunities().size.toString();
+    }
+    
+    async _handleActivitiesYearsDataChanged()
+    {
+        this.activities.dropdown.refresh();
+    }
+
+    _handleActivitiesListButtonClick()
+    {
+        if (this.show_activities_list_button.checked)
         {
-            let row = this.borders.gminy.labels.rows[this.map.selected_borders_item.number - 1];
+            document.querySelector('div#side').classList.remove('hidden');
+        }
+        else
+        {
+            document.querySelector('div#side').classList.add('hidden');
+        }
+    }
+
+    _handleMapCommunityHovered()
+    {
+        if (this.map.hovered_community)
+        {
+            let row = this.map.borders.gminy.labels.rows[this.map.hovered_community.number - 1];
             let name = row[2];
             let code = row[1].trim();
             this.elements.gmina.innerText = `${name}`; //`${name} (${code})`;
@@ -216,12 +275,128 @@ export class App
         }
     }
 
+    _handleMapCommunitySelected()
+    {
+        this.activities_table.select(this.map.selected_community?.activities);
+        this.map.redraw();
+    }
+
+    async _handleFirstInteraction()
+    {
+        window.removeEventListener('click', this._handleFirstInteraction);
+
+        //if (localStorage.get)
+        this.notifications.add('You can drop GPX files')
+    }
+
+    /**
+     * @param {Event} e 
+     */
+    async _handleRemoveButtonClick(e)
+    {
+        let rows = this.activities_table.selected_rows;
+        rows.forEach(row => row.remove());
+        rows.forEach(row => this.removeActivity(row.item));
+        this._handleActivitiesYearsDataChanged();
+        this._handleSelectedActivitiesYearChanged();
+    }
+
+    _handleTableSelectionChanged()
+    {
+        this.map.redraw();
+    }
+
+    async _handleConnectButtonClick()
+    {
+        if (this.connect_button.user_name)
+        {
+            this.strava.disconnect();
+            this.connect_button.user_name = null;
+            this._handleStravaDisconnected();
+        }
+        else
+        {
+            this.connect_button.element.classList.add('disabled');
+            await this.strava.connect();
+            await this._handleStravaConnected();
+            this.connect_button.element.classList.remove('disabled');
+        }
+    }
+
+    async _handleStravaConnected()
+    {
+        let created_at_year = new Date(this.strava.is_connected.created_at).getFullYear();
+        let current_year = new Date().getFullYear();
+
+        for (let year = created_at_year; year <= current_year; year++)
+        {
+            let row = await this.activities.ensureActivitiesYearRow(year, year => this.ensureActivitiesYear(year));
+            let entity = row.item.entity;
+
+            if (entity.strava)
+            {
+                // if (entity.strava.all_pages_fetched && entity.strava.all_activities_downloaded)
+                // {
+                //     row.strava_status = 'synchronize';
+                // }
+                // else
+                // {
+                //     row.strava_status = 'not-fetched';
+                // }
+            }
+            else
+            {
+                //row.strava_status = 'not-fetched';
+                entity.strava =
+                {
+                    all_pages_fetched: false,
+                    all_activities_downloaded: false,
+                    last_fetched_page: 0
+                }
+
+                this.database.updateActivitiesYear(row.item);
+            }
+
+            if (! row.onFetchRequested)
+            {
+                row.onFetchRequested = handleFetchButtonSelected.bind(this);
+            }
+        }
+
+        this.connect_button.user_name = this.strava.athlete.firstname;
+        document.body.classList.remove('strava-disabled');
+    }
+
+    _handleStravaDisconnected()
+    {
+        document.body.classList.add('strava-disabled');
+    }
+
+    _handleChartButtonClick()
+    {
+        /** @type {{ title: string, value: number, year: number }[]} */
+        let chart_items = [];
+
+        for (let activities_year of this.activities.items.items.values())
+        {
+            let title = activities_year.entity.id.toString();
+            let value = activities_year.calculateCommunitiesVisitCount();
+            chart_items.push({ title, value, year: activities_year.entity.id });
+        }
+        
+        chart_items.sort((a, b) => a.year - b.year);
+        this.chart.set(chart_items);
+        this.elements.chart_dialog.classList.add('open');
+    }
+
+    _handleChartDialogClick()
+    {
+        this.elements.chart_dialog.classList.remove('open');
+    }
+
     _registerMapContainerResizeHandler()
     {
-        this.elements.map_container.style.position = 'relative';
-        this.map.element.style.position = 'absolute';
-        let resize_observer = new ResizeObserver(this._handleMapContainerResize.bind(this));
-        resize_observer.observe(this.elements.map_container);
+        window.addEventListener('resize', e => this._handleMapContainerResize());
     }
 
     _handleMapContainerResize()

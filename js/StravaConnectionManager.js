@@ -1,13 +1,17 @@
 const PROPERTY_ATHLETE = 'strava_athlete';
 const PROPERTY_OAUTH = 'strava_oauth';
 
-export class ConnectionManager
+export class StravaConnectionManager
 {
+    /**
+     * @param {string} base_path 
+     */
     constructor(base_path)
     {
         this.client_id = '75097';
         this.client_secret = '705655a2e206c7c42ab9a6fe9e60561568b807eb';
         this.redirect_uri = `${window.location.origin}${base_path}`;
+        /** @type {Object.<string, *>} */
         this.properties = {};
     }
 
@@ -31,12 +35,12 @@ export class ConnectionManager
 
     get athlete()
     {
-        return this.getPropertyWithStorage(PROPERTY_ATHLETE);
+        return this.getStoragedProperty(PROPERTY_ATHLETE);
     }
 
     get is_connected()
     {
-        return this.getPropertyWithStorage(PROPERTY_ATHLETE);
+        return this.getStoragedProperty(PROPERTY_ATHLETE);
     }
 
     async connect()
@@ -49,13 +53,13 @@ export class ConnectionManager
 
     disconnect()
     {
-        this.setPropertyWithStorage(PROPERTY_ATHLETE, null);
+        this.setStoragedProperty(PROPERTY_ATHLETE, null);
     }
 
     clear()
     {
-        this.setPropertyWithStorage(PROPERTY_ATHLETE, null);
-        this.setPropertyWithStorage(PROPERTY_OAUTH, null);
+        this.setStoragedProperty(PROPERTY_ATHLETE, null);
+        this.setStoragedProperty(PROPERTY_OAUTH, null);
     }
 
     async getAthlete()
@@ -69,16 +73,28 @@ export class ConnectionManager
         return await this.fetchJson(`https://www.strava.com/api/v3/athletes/${athlete.id}/routes?page=${page}&per_page=${per_page}`);
     }
 
-    async getActivities()
+    /**
+     * @param {Object.<string, any>} query 
+     * @returns {Promise<import("./App").ActivityEntity[]>}
+     */
+    async getActivities(query)
     {
-        return await this.fetchJson(`https://www.strava.com/api/v3/athlete/activities`);
+        return await this.fetchJson(`https://www.strava.com/api/v3/athlete/activities`, query);
     }
 
+    /**
+     * @param {string|number} activity_id 
+     * @returns {Promise<{ type: 'latlng' | 'distance', data: number[][] }[]>}
+     */
     async getActivityStreams(activity_id)
     {
-        return await this.fetchJson(`https://www.strava.com/api/v3/activities/${activity_id}/streams?keys=latlng`);
+        return await this.fetchJson(`https://www.strava.com/api/v3/activities/${activity_id}/streams`, { keys: 'latlng' });
     }
 
+    /**
+     * @param {string|number} route_id 
+     * @returns 
+     */
     async getRouteGpx(route_id)
     {
         return await this.fetchText(`https://www.strava.com/api/v3/routes/${route_id}/export_gpx`);
@@ -86,7 +102,7 @@ export class ConnectionManager
 
     async getAccessToken()
     {
-        let oauth = this.getPropertyWithStorage(PROPERTY_OAUTH);
+        let oauth = this.getStoragedProperty(PROPERTY_OAUTH);
 
         if (oauth)
         {
@@ -100,7 +116,7 @@ export class ConnectionManager
         else
         {
             let last_oauth_state = new Date().getTime();
-            localStorage.setItem('last_oauth_state', last_oauth_state);
+            localStorage.setItem('last_oauth_state', `${last_oauth_state}`);
             window.location.href = `https://www.strava.com/oauth/authorize?client_id=${this.client_id}&redirect_uri=${this.redirect_uri}&response_type=code&approval_prompt=auto&scope=activity:read&state=${last_oauth_state}`;
             throw 'Authorization Redirect';
         }
@@ -108,6 +124,10 @@ export class ConnectionManager
         return oauth.bearer;
     }
 
+    /**
+     * @param {string} url 
+     * @returns 
+     */
     async loadAccesToken(url)
     {
         let response = await fetch(url, { method: 'POST' });
@@ -116,7 +136,7 @@ export class ConnectionManager
         {
             let oauth = await response.json();
             oauth.bearer = `Bearer ${oauth.access_token}`;
-            this.setPropertyWithStorage(PROPERTY_OAUTH, oauth);
+            this.setStoragedProperty(PROPERTY_OAUTH, oauth);
             return oauth;
         }
         else
@@ -125,25 +145,47 @@ export class ConnectionManager
         }
     }
 
-    async fetchJson(url)
+    /**
+     * @param {string} url 
+     * @param {Object.<string, string>} [query]
+     * @returns 
+     */
+    async fetchJson(url, query)
     {
-        return await (await this.fetch(url)).json();
+        return await (await this.fetch(url, query)).json();
     }
 
+    /**
+     * @param {string} url 
+     * @returns 
+     */
     async fetchText(url)
     {
         return await (await this.fetch(url)).text();
     }
 
+    /**
+     * @param {string} name 
+     * @param {string} url 
+     * @returns 
+     */
     async fetchProperty(name, url)
     {
-        return this.getPropertyWithStorage(name) || this.setPropertyWithStorage(name, await this.fetchJson(url));
+        return this.getStoragedProperty(name) || this.setStoragedProperty(name, await this.fetchJson(url));
     }
     
-    async fetch(url)
+    /**
+     * @param {string} url 
+     * @param {Object.<string, string>} [query]
+     * @returns 
+     */
+    async fetch(url, query)
     {
+        // @ts-ignore
+        let url_arguments = query ? Object.entries(query).map(q => q[0] + '=' + q[1]).join('&') : undefined;
+        let url_with_arguments = url + (query ? `?${url_arguments}` : ''); 
         let access_token = await this.getAccessToken();
-        let response = await fetch(url, { headers: { Authorization: access_token } });
+        let response = await fetch(url_with_arguments, { headers: { Authorization: access_token } });
 
         switch (response.status)
         {
@@ -157,7 +199,11 @@ export class ConnectionManager
         }
     }
 
-    getPropertyWithStorage(name)
+    /**
+     * @param {string} name 
+     * @returns 
+     */
+    getStoragedProperty(name)
     {
         let value = this.properties[name];
 
@@ -169,7 +215,13 @@ export class ConnectionManager
         return value;
     }
     
-    setPropertyWithStorage(name, value)
+    /**
+     * 
+     * @param {string} name 
+     * @param {*} value 
+     * @returns 
+     */
+    setStoragedProperty(name, value)
     {
         localStorage.setItem(name, JSON.stringify(this.properties[name] = value));
         return value;
