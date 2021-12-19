@@ -35,6 +35,7 @@ export class AppNotifications
 
     async _onClick()
     {
+        // @ts-ignore
         this.element_audio_postman.cloneNode().play();
     }
 } 
